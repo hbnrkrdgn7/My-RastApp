@@ -2,6 +2,7 @@
 
 Modern ve kullanıcı dostu bir görev yönetim sistemi. React Native frontend ve  Node.js, Express.js backend ile geliştirilmiştir.
 
+
 ##  Özellikler
 
 ### Kullanıcı Yönetimi
