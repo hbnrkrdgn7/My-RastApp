@@ -1,8 +1,8 @@
 # MyApp - Task Management System
 
-Modern ve kullanıcı dostu bir görev yönetim sistemi. React Native frontend ve Express.js backend ile geliştirilmiştir.
+Modern ve kullanıcı dostu bir görev yönetim sistemi. React Native frontend ve  Node.js, Express.js backend ile geliştirilmiştir.
 
-## 🚀 Özellikler
+##  Özellikler
 
 ### Kullanıcı Yönetimi
 - ✅ Kullanıcı kaydı ve girişi
@@ -26,7 +26,7 @@ Modern ve kullanıcı dostu bir görev yönetim sistemi. React Native frontend v
 - ✅ Kullanıcı dostu modal'lar
 - ✅ Smooth animasyonlar
 
-## 🛠️ Teknolojiler
+##  Teknolojiler
 
 ### Frontend
 - **React Native** - Mobil uygulama framework'ü
@@ -41,7 +41,7 @@ Modern ve kullanıcı dostu bir görev yönetim sistemi. React Native frontend v
 - **bcryptjs** - Şifre hashleme
 - **CORS** - Cross-origin resource sharing
 
-## 📱 Kurulum
+##  Kurulum
 
 ### Gereksinimler
 - Node.js (v16+)
@@ -64,7 +64,7 @@ npx react-native run-android  # Android için
 npx react-native run-ios      # iOS için
 ```
 
-## 🗄️ Veritabanı
+##  Veritabanı
 
 ### Tablolar
 - **users**: Kullanıcı bilgileri
@@ -77,7 +77,7 @@ cd backend
 node run-migration.js
 ```
 
-## 🔌 API Endpoints
+##  API Endpoints
 
 ### Tasks
 - `GET /api/tasks/:projectId` - Proje görevlerini listele
@@ -93,16 +93,16 @@ node run-migration.js
 - `DELETE /api/users/userinfo/:userId` - Kullanıcı sil
 - `PUT /api/users/changepassword/:userId` - Şifre değiştir
 
-## 📝 Postman Test Komutları
+##  Postman Test Komutları
 
 ### Task Listeleme
 ```
-GET http://192.168.0.248:5000/api/tasks/1
+GET http://192.168.0.247:5000/api/tasks/1
 ```
 
 ### Yeni Task Oluşturma
 ```
-POST http://192.168.0.248:5000/api/tasks
+POST http://192.168.0.247:5000/api/tasks
 Content-Type: application/json
 
 {
@@ -135,7 +135,7 @@ Content-Type: application/json
 DELETE http://192.168.0.248:5000/api/tasks/1
 ```
 
-## 🎨 Tasarım Özellikleri
+##  Tasarım Özellikleri
 
 ### Renk Paleti
 - **Ana Renk**: #7b2ff7 (Mor)
@@ -150,7 +150,7 @@ DELETE http://192.168.0.248:5000/api/tasks/1
 - Smooth transitions
 - Responsive layout
 
-## 🔧 Geliştirme
+##  Geliştirme
 
 ### Proje Yapısı
 ```
@@ -176,7 +176,7 @@ MyApp/
 - Frontend debug: React Native debugger
 - Network istekleri: Axios interceptors
 
-## 📱 Ekran Görüntüleri
+##  Ekran Görüntüleri
 
 ### Ana Ekran
 - 4 kolonlu kanban board
@@ -193,7 +193,7 @@ MyApp/
 - Şifre değiştirme
 - Avatar seçimi
 
-## 🚀 Gelecek Özellikler
+##  Gelecek Özellikler
 
 - [ ] Drag & drop görev taşıma
 - [ ] Görev filtreleme ve arama
@@ -210,13 +210,3 @@ MyApp/
 4. Push edin (`git push origin feature/AmazingFeature`)
 5. Pull Request açın
 
-
-
-Bu proje MIT lisansı altında lisanslanmıştır.
-
-
-Proje Sahibi: [Hibe Kara]
-
----
-
-**Not**: Bu proje eğitim ve geliştirme amaçlıdır. Production kullanımı için ek güvenlik önlemleri alınması önerilir.

@@ -96,21 +96,37 @@ const LoginScreen = ({ navigation }) => {
       profile_picture: selectedAvatar,
     });
 
-    console.log("Kayıt başarılı:", res);
-    Alert.alert("Başarılı", "Kayıt başarılı! Giriş yapabilirsiniz.");
+    // ✅ Kayıt başarılıysa
+    if (res.user) {
+      Alert.alert("Başarılı", "Kayıt başarılı! Giriş yapabilirsiniz.");
 
-    setRegisterVisible(false);
-    setRegName("");
-    setRegLastName("");
-    setRegEmail("");
-    setRegPassword("");
-    setSelectedAvatar(null);
+      setRegisterVisible(false);
+      setRegName("");
+      setRegLastName("");
+      setRegEmail("");
+      setRegPassword("");
+      setSelectedAvatar(null);
+      return;
+    }
+
+    // Beklenmedik durumlar
+    Alert.alert("Hata", "Kayıt işlemi başarısız oldu!");
   } catch (err) {
     console.log("Kayıt hatası:", err);
-    Alert.alert("Hata", "Kayıt işlemi başarısız oldu!");
+
+    // 🔹 Backend'ten gelen "Bu e-posta zaten kayıtlı." hatasını yakala
+    const errorMessage =
+      err.response?.data?.error ||
+      err.message ||
+      "Kayıt işlemi başarısız oldu.";
+
+    if (errorMessage.includes("Bu e-posta zaten kayıtlı")) {
+      Alert.alert("Uyarı", "Bu e-posta zaten kullanılmakta!");
+    } else {
+      Alert.alert("Hata", errorMessage);
+    }
   }
 };
-
 
   return (
     <View style={styles.container}>
