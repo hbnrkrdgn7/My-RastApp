@@ -23,10 +23,10 @@ router.get("/user/:userId", async (req, res) => {
 });
 
 
-// 📁 Proje görevlerini listele
+//  Proje görevlerini listele
 router.get("/:projectId", getTasks);
 
-// ✏️ Diğer CRUD işlemleri
+//  Diğer CRUD işlemleri
 router.post("/", createTask);
 router.put("/:id", updateTask);
 router.delete("/:id", deleteTask);

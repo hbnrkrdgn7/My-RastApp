@@ -151,12 +151,47 @@ const UserInfoScreen = ({ navigation }) => {
 export default UserInfoScreen;
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 20, backgroundColor: "#fff", alignItems: "center", justifyContent:"center" },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 20, color: "#7b2ff7", textAlign: "center" },
-  avatar: { width: 120, height: 120, borderRadius: 60, marginBottom: 20 },
-  input: { width: "100%", borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 10, marginBottom: 15 },
-  button: { backgroundColor: "#7b2ff7", padding: 12, borderRadius: 8, alignItems: "center", width: "100%", marginBottom: 10 },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  container: { 
+    flexGrow: 1, 
+    padding: 20, 
+    backgroundColor: "#fff", 
+    alignItems: "center", 
+    justifyContent:"center" 
+  },
+  title: { 
+    fontSize: 22, 
+    fontWeight: "bold", 
+    marginBottom: 20, 
+    color: "#7b2ff7", 
+    textAlign: "center" 
+  },
+  avatar: { 
+    width: 120, 
+    height: 120, 
+    borderRadius: 60, 
+    marginBottom: 20 
+  },
+  input: { 
+    width: "100%", 
+    borderWidth: 1, 
+    borderColor: "#ccc", 
+    borderRadius: 8, 
+    padding: 10, 
+    marginBottom: 15 
+  },
+  button: { 
+    backgroundColor: "#7b2ff7", 
+    padding: 12, 
+    borderRadius: 8, 
+    alignItems: "center", 
+    width: "100%", 
+    marginBottom: 10 
+  },
+  buttonText: { 
+    color: "#fff", 
+    fontWeight: "700", 
+    fontSize: 16 
+  },
   avatarGrid: {
     flexDirection: "row",
     flexWrap: "wrap",

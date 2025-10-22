@@ -81,10 +81,40 @@ const ChangePasswordScreen = ({ navigation }) => {
 export default ChangePasswordScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: "center", backgroundColor: "#fff" },
-  title: { fontSize: 24, fontWeight: "bold", color: "#7b2ff7", marginBottom: 20, textAlign: "center" },
-  input: { width: "100%", borderWidth: 1, borderColor: "#ccc", borderRadius: 8, padding: 12, marginBottom: 15 },
-  button: { backgroundColor: "#7b2ff7", padding: 15, borderRadius: 10, alignItems: "center", marginBottom: 10 },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  cancel: { backgroundColor: "#ccc" },
+  container: { 
+   flex: 1, 
+   padding: 20, 
+   justifyContent: "center", 
+   backgroundColor: "#fff" 
+},
+  title: { 
+   fontSize: 24, 
+   fontWeight: "bold", 
+   color: "#7b2ff7", 
+   marginBottom: 20, 
+   textAlign: "center" 
+},
+  input: { 
+   width: "100%", 
+   borderWidth: 1, 
+   borderColor: "#ccc", 
+   borderRadius: 8, 
+   padding: 12, 
+   marginBottom: 15 
+},
+  button: { 
+   backgroundColor: "#7b2ff7", 
+   padding: 15,
+   borderRadius: 10, 
+   alignItems: "center", 
+   marginBottom: 10 
+},
+  buttonText: { 
+   color: "#fff", 
+   fontWeight: "bold", 
+   fontSize: 16 
+},
+  cancel: { 
+   backgroundColor: "#ccc" 
+},
 });

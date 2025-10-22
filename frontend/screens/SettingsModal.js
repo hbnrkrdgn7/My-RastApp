@@ -1,4 +1,3 @@
-import React from "react";
 import { View, Text, TouchableOpacity, Modal, StyleSheet } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons";
 
@@ -65,10 +64,37 @@ const SettingsModal = ({ visible, onClose, navigation }) => {
 export default SettingsModal;
 
 const styles = StyleSheet.create({
-  modalContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },
-  modalContent: { backgroundColor: "#fff", borderRadius: 12, padding: 20, width: 300 },
-  title: { fontSize: 18, fontWeight: "700", marginBottom: 15 },
-  option: { flexDirection: "row", alignItems: "center", paddingVertical: 10, gap: 10 },
-  optionText: { fontSize: 16 },
-  closeButton: { marginTop: 15, backgroundColor: "#7b2ff7", padding: 10, borderRadius: 8, alignItems: "center" }
+  modalContainer: {
+   flex: 1, 
+   justifyContent: "center", 
+   alignItems: "center", 
+   backgroundColor: "rgba(0,0,0,0.5)" 
+},
+  modalContent: { 
+   backgroundColor: "#fff", 
+   borderRadius: 12, 
+   padding: 20, 
+   width: 300 
+},
+  title: { 
+   fontSize: 18, 
+   fontWeight: "700", 
+   marginBottom: 15 
+},
+  option: { 
+   flexDirection: "row", 
+   alignItems: "center", 
+   paddingVertical: 10, 
+   gap: 10 
+},
+  optionText: { 
+   fontSize: 16 
+},
+  closeButton: { 
+   marginTop: 15, 
+   backgroundColor: "#7b2ff7", 
+   padding: 10, 
+   borderRadius: 8, 
+   alignItems: "center" 
+}
 });

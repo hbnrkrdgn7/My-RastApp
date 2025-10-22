@@ -131,7 +131,7 @@ const HomeScreen = ({ navigation }) => {
 
       <ScrollView
   showsVerticalScrollIndicator={false}
-  contentContainerStyle={{ paddingBottom: 150 }} // 🔥 Alt bar + boşluk için
+  contentContainerStyle={{ paddingBottom: 150 }}
 >
   {/* Project sections */}
 <View style={styles.sectionRow}>
@@ -235,142 +235,143 @@ export default HomeScreen;
 // ---------- STYLES ----------
 const styles = StyleSheet.create({
   container: { 
-  flex: 1, 
-  backgroundColor: "#F9F9FB" 
+   flex: 1, 
+   backgroundColor: "#F9F9FB" 
 },
   headerContainer: { 
-  backgroundColor: "#7b2ff7", 
-  paddingTop: 10, 
-  paddingHorizontal: 20, 
-  paddingBottom: 0, 
-  flexDirection: "row", 
-  justifyContent: "space-between", 
-  alignItems: "center" 
+   backgroundColor: "#7b2ff7", 
+   paddingTop: 10, 
+   paddingHorizontal: 20, 
+   paddingBottom: 0, 
+   flexDirection: "row", 
+   justifyContent: "space-between", 
+   alignItems: "center" 
 },
   headerLeft: { 
-  flexDirection: "row", 
-  alignItems: "center", 
-  gap: 8 
+   flexDirection: "row", 
+   alignItems: "center", 
+   gap: 8 
 },
   logo: { 
-  width: 110, 
-  height: 110 
+   width: 110, 
+   height: 110 
 },
   headerIcons: { 
-  flexDirection: "row", 
-  gap: 20 
+   flexDirection: "row", 
+   gap: 20 
 },
   searchInput: { 
-  backgroundColor: "#fff",
-  borderRadius: 8, 
-  paddingHorizontal: 12, 
-  paddingVertical: 6, 
-  flex: 1, 
-  marginRight: 10, 
-  color: "#000" 
+   backgroundColor: "#fff",
+   borderRadius: 8, 
+   paddingHorizontal: 12, 
+   paddingVertical: 6, 
+   flex: 1, 
+   marginRight: 10, 
+   color: "#000" 
 },
   section: { 
-  fontWeight: "700", 
-  fontSize: 18, 
-  marginVertical: 10, 
-  marginLeft: 10 
+   fontWeight: "700", 
+   fontSize: 18, 
+   marginVertical: 10, 
+   marginLeft: 10 
 },
   flatListContent: { 
-  paddingLeft: 10, 
-  paddingBottom: 10 },
+   paddingLeft: 10, 
+   paddingBottom: 10 
+},
   taskCard: { 
-  backgroundColor: "#fff", 
-  marginHorizontal: 8, 
-  marginVertical: 5, 
-  padding: 12, 
-  borderRadius: 12, 
-  width: 250, 
-  shadowColor: "#000", 
-  shadowOffset: { width: 0, height: 2 }, 
-  shadowOpacity: 0.2, 
-  shadowRadius: 4, 
-  elevation: 3 
+   backgroundColor: "#fff", 
+   marginHorizontal: 8, 
+   marginVertical: 5, 
+   padding: 12, 
+   borderRadius: 12, 
+   width: 250, 
+   shadowColor: "#000", 
+   shadowOffset: { width: 0, height: 2 }, 
+   shadowOpacity: 0.2, 
+   shadowRadius: 4, 
+   elevation: 3 
 },
   taskTitle: { 
-  fontWeight: "700", 
-  fontSize: 16 
+   fontWeight: "700", 
+   fontSize: 16 
 },
   taskDescription: { 
-  fontSize: 14, 
-  color: "#333", 
-  marginTop: 5 
+   fontSize: 14, 
+   color: "#333", 
+   marginTop: 5 
 },
   assigneeTag: { 
-  flexDirection: "row", 
-  alignItems: "center",
-  marginTop: 8 
+   flexDirection: "row", 
+   alignItems: "center",
+   marginTop: 8 
 },
   assigneeAvatar: { 
-  width: 30, 
-  height: 30, 
-  borderRadius: 15 
+   width: 30, 
+   height: 30, 
+   borderRadius: 15 
 },
   assigneeIcon: { 
-  width: 30, 
-  height: 30, 
-  borderRadius: 15, 
-  backgroundColor: "#eee", 
-  justifyContent: "center", 
-  alignItems: "center" 
+   width: 30, 
+   height: 30, 
+   borderRadius: 15, 
+   backgroundColor: "#eee", 
+   justifyContent: "center", 
+   alignItems: "center" 
 },
   assigneeIconText: { 
-  fontSize: 16 
+   fontSize: 16 
 },
   assigneeText: { 
-  marginLeft: 6, 
-  fontSize: 14, 
-  maxWidth: 150 
+   marginLeft: 6, 
+   fontSize: 14, 
+   maxWidth: 150 
 },
   taskFooter: { 
-  flexDirection: "row", 
-  justifyContent: "space-between", 
-  marginTop: 8 
+   flexDirection: "row", 
+   justifyContent: "space-between", 
+   marginTop: 8 
 },
   taskDate: { 
-  fontSize: 12, 
-  color: "#888" 
+   fontSize: 12, 
+   color: "#888" 
 },
   statusBadge: { 
-  fontSize: 12, 
-  fontWeight: "700", 
-  paddingHorizontal: 6, 
-  paddingVertical: 2, 
-  borderRadius: 8, 
-  color: "#fff" 
+   fontSize: 12, 
+   fontWeight: "700", 
+   paddingHorizontal: 6, 
+   paddingVertical: 2, 
+   borderRadius: 8, 
+   color: "#fff" 
 },
   statusDone: { 
-  backgroundColor: "#4BB543" 
+   backgroundColor: "#4BB543" 
 },
   statusProgress: { 
-  backgroundColor: "#FFA500" 
+   backgroundColor: "#FFA500" 
 },
   statusBacklog: { 
-  backgroundColor: "#FF6347" 
+   backgroundColor: "#FF6347" 
 },
   statusTodo: { 
-  backgroundColor: "#7b2ff7" 
+   backgroundColor: "#7b2ff7" 
 },
   addButton: { 
-  position: "absolute",
-  bottom: 95, // alt barın biraz üstünde kalsın
-  right: 25,
-  backgroundColor: "#7b2ff7",
-  borderRadius: 30,
-  width: 60,
-  height: 60,
-  alignItems: "center",
-  justifyContent: "center",
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.3,
-  shadowRadius: 4,
-  elevation: 12,
-  zIndex: 10, 
+   position: "absolute",
+   bottom: 95, // alt barın biraz üstünde kalsın
+   right: 25,
+   backgroundColor: "#7b2ff7",
+   borderRadius: 30,
+   width: 60,
+   height: 60,
+   alignItems: "center",
+   justifyContent: "center",
+   shadowColor: "#000",
+   shadowOffset: { width: 0, height: 2 },
+   shadowOpacity: 0.3,
+   shadowRadius: 4,
+   elevation: 12,
+   zIndex: 10, 
 },    
   bottomBar: {
     position: "absolute",
@@ -401,10 +402,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   sectionRow: {
-  flexDirection: "row",
-  alignItems: "center",
-  marginLeft: 10,
-  marginTop: 10,
+   flexDirection: "row",
+   alignItems: "center",
+   marginLeft: 10,
+   marginTop: 10,
 },
 section: {
   fontWeight: "700",

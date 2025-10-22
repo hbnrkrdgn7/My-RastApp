@@ -8,8 +8,8 @@
  * - Görev silme işlemi (onay ile)
  */
 
-import React, { useState } from "react";
-import {View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert,} from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert, } from "react-native";
 import Ionicons from "react-native-vector-icons/Ionicons"; // İkonlar için
 import AddTaskModal from "./AddTaskModal"; // Görev düzenleme modal'ı
 import { deleteTask } from "../services/api"; // API çağrıları
@@ -24,7 +24,6 @@ import { deleteTask } from "../services/api"; // API çağrıları
 const TaskDetail = ({ task, onClose, refresh }) => {
   const [editModalVisible, setEditModalVisible] = useState(false); // Düzenleme modal'ı durumu
   const [currentTask, setCurrentTask] = useState(task); // Mevcut görev state'i
-
   // Görev yoksa component render etme
   if (!currentTask) return null;
 
@@ -132,8 +131,8 @@ const TaskDetail = ({ task, onClose, refresh }) => {
                 currentTask.status === "Done"
                   ? styles.statusDone
                   : currentTask.status === "In Progress"
-                  ? styles.statusProgress
-                  : styles.statusTodo,
+                    ? styles.statusProgress
+                    : styles.statusTodo,
               ]}
             >
               <Text style={styles.statusText}>{currentTask.status}</Text>
@@ -172,11 +171,11 @@ const TaskDetail = ({ task, onClose, refresh }) => {
         onRequestClose={() => setEditModalVisible(false)}
       >
         <AddTaskModal
-  onClose={() => setEditModalVisible(false)}
-  refresh={refresh}
-  task={currentTask}
-  onTaskUpdate={(updated) => setCurrentTask(updated)} // ✅ düzeltildi
-/>
+          onClose={() => setEditModalVisible(false)}
+          refresh={refresh}
+          task={currentTask}
+          onTaskUpdate={(updated) => setCurrentTask(updated)} // ✅ düzeltildi
+        />
 
       </Modal>
     </View>
@@ -263,10 +262,10 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   avatar: { width: 30, height: 30, borderRadius: 15, marginRight: 8 },
-  assigneeAvatar: { 
-    width: 30, 
-    height: 30, 
-    borderRadius: 15, 
+  assigneeAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     marginRight: 8,
     borderWidth: 2,
     borderColor: "#7b2ff7",
