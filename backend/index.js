@@ -14,7 +14,7 @@ const app = express();
 
 // CORS ayarları - farklı origin'lerden gelen isteklere izin ver
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://192.168.0.248:3000', 'http://10.0.2.2:3000'],
+  origin: ['http://localhost:3000', 'http://192.168.0.247:3000', 'http://10.0.2.2:3000'],
   credentials: true
 }));
 

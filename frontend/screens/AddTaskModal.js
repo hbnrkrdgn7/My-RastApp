@@ -55,7 +55,7 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get("http://192.168.0.247:5000/api/users"); // ✅ backend route: GET /api/users
+        const res = await axios.get("http://192.168.0.248:5000/api/users"); // ✅ backend route: GET /api/users
         setUsers(res.data);
       } catch (err) {
         console.error("Kullanıcılar alınamadı:", err.message);

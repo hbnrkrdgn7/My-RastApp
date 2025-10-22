@@ -53,12 +53,10 @@ const LoginScreen = ({ navigation }) => {
         console.log("Giriş başarılı, Home'a yönlendiriliyor...");
 
         // ✅ Kullanıcı ID'sini local'e kaydet
-        await AsyncStorage.setItem("userId", res.user.id.toString());
+       await AsyncStorage.setItem("user", JSON.stringify(res.user));
+      console.log("✅ Kullanıcı AsyncStorage'a kaydedildi:", res.user);
 
-        // ✅ Kullanıcı verisini de saklayabiliriz (isteğe bağlı)
-        await AsyncStorage.setItem("userData", JSON.stringify(res.user));
-
-        navigation.replace("Home", { user: res.user });
+  navigation.replace("Home");
       } else {
         console.log("Yanıt geldi ama user yok:", res);
       }
