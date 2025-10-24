@@ -193,6 +193,10 @@ router.delete("/userinfo/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
 
+    // 1️⃣ Kullanıcıya atanmış görevleri assignee_id null yap
+    await pool.query("UPDATE tasks SET assignee_id = NULL WHERE assignee_id = $1::int", [userId]);
+
+    // 2️⃣ Kullanıcıyı sil
     const result = await pool.query(
       "DELETE FROM users WHERE id = $1::int RETURNING id, name, surname, email",
       [userId]
@@ -204,9 +208,11 @@ router.delete("/userinfo/:userId", async (req, res) => {
 
     res.json({ message: "Kullanıcı başarıyla silindi", user: result.rows[0] });
   } catch (err) {
+    console.error("Kullanıcı silme hatası:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // 👇 Tüm kullanıcıları getir
 router.get("/", async (req, res) => {

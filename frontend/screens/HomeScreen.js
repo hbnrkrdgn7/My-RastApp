@@ -20,9 +20,7 @@ const HomeScreen = ({ navigation }) => {
   const [showSearch, setShowSearch] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectedTask, setSelectedTask] = useState(null);
-
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-
   const projectId = 1;
 
   const fetchTasks = async () => {
@@ -43,38 +41,43 @@ const HomeScreen = ({ navigation }) => {
   };
 
   const renderTask = ({ item }) => {
-    const statusStyle = item.status === "Done" ? styles.statusDone :
-                        item.status === "In Progress" ? styles.statusProgress :
-                        item.status === "Backlog" ? styles.statusBacklog :
-                        styles.statusTodo;
+  const statusStyle = item.status === "Done" ? styles.statusDone :
+                      item.status === "In Progress" ? styles.statusProgress :
+                      item.status === "Backlog" ? styles.statusBacklog :
+                      styles.statusTodo;
 
-    return (
-      <TouchableOpacity style={styles.taskCard} onPress={() => setSelectedTask(item)}>
-        <Text style={styles.taskTitle}>{item.title}</Text>
-        <Text style={styles.taskDescription} numberOfLines={3}>{item.description || "No description available."}</Text>
+  return (
+    <TouchableOpacity style={styles.taskCard} onPress={() => setSelectedTask(item)}>
+      <Text style={styles.taskTitle}>{item.title}</Text>
+      <Text style={styles.taskDescription} numberOfLines={3}>{item.description || "No description available."}</Text>
 
-        {item.assigned_to_name && (
-          <View style={styles.assigneeTag}>
-            {item.assigned_to_avatar ? <Image source={{ uri: item.assigned_to_avatar }} style={styles.assigneeAvatar} />
-              : <View style={styles.assigneeIcon}><Text style={styles.assigneeIconText}>👤</Text></View>}
-            <Text style={styles.assigneeText} numberOfLines={1}>{item.assigned_to_name}</Text>
-          </View>
-        )}
-        
+      {/* Task Footer */}
+      <View style={styles.taskFooter}>
+  {/* Assignee */}
+  <View style={styles.assigneeTag}>
+    {item.assigned_to_avatar ? 
+      <Image source={{ uri: item.assigned_to_avatar }} style={styles.assigneeAvatar} /> 
+      : <View style={styles.assigneeIcon}><Text style={styles.assigneeIconText}>👤</Text></View>}
+    <Text style={styles.assigneeText} numberOfLines={1}>{item.assigned_to_name || "Unassigned"}</Text>
+  </View>
 
-        <View style={styles.taskFooter}>
-<Text style={styles.taskDate}>
-  📅 {new Date(item.created_at).toLocaleDateString("tr-TR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  })}
-</Text>
-          <Text style={[styles.statusBadge, statusStyle]}>{item.status}</Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  {/* Date ve Status */}
+  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+    <Text style={styles.taskDate}>
+      📅 {new Date(item.created_at).toLocaleDateString("tr-TR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })}
+    </Text>
+    <Text style={[styles.statusBadge, statusStyle]}>{item.status}</Text>
+  </View>
+</View>
+
+    </TouchableOpacity>
+  );
+};
+
 
   useEffect(() => { fetchTasks(); }, []);
 
@@ -281,16 +284,18 @@ const styles = StyleSheet.create({
 },
   taskCard: { 
    backgroundColor: "#fff", 
-   marginHorizontal: 8, 
-   marginVertical: 5, 
-   padding: 12, 
-   borderRadius: 12, 
-   width: 250, 
-   shadowColor: "#000", 
-   shadowOffset: { width: 0, height: 2 }, 
-   shadowOpacity: 0.2, 
-   shadowRadius: 4, 
-   elevation: 3 
+  marginHorizontal: 8, 
+  marginVertical: 5, 
+  padding: 12, 
+  borderRadius: 12, 
+  width: 250, 
+  height: 180, // sabit yükseklik
+  shadowColor: "#000", 
+  shadowOffset: { width: 0, height: 2 }, 
+  shadowOpacity: 0.2, 
+  shadowRadius: 4, 
+  elevation: 3,
+  justifyContent: "space-between",
 },
   taskTitle: { 
    fontWeight: "700", 
@@ -298,13 +303,15 @@ const styles = StyleSheet.create({
 },
   taskDescription: { 
    fontSize: 14, 
-   color: "#333", 
-   marginTop: 5 
+  color: "#333", 
+  marginTop: 5, 
+  flexShrink: 1, 
+  height: 54,
 },
-  assigneeTag: { 
-   flexDirection: "row", 
-   alignItems: "center",
-   marginTop: 8 
+  assigneeTag: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: 4
 },
   assigneeAvatar: { 
    width: 30, 
@@ -327,11 +334,16 @@ const styles = StyleSheet.create({
    fontSize: 14, 
    maxWidth: 150 
 },
-  taskFooter: { 
-   flexDirection: "row", 
-   justifyContent: "space-between", 
-   marginTop: 8 
+  taskFooter: {
+  marginTop: 10,
+  borderTopWidth: 0.5,
+  borderTopColor: "#eee",
+  paddingTop: 8,
+  flexDirection: "column", // vertical layout
+  justifyContent: "flex-end",
+  gap: 4
 },
+
   taskDate: { 
    fontSize: 12, 
    color: "#888" 
@@ -342,7 +354,8 @@ const styles = StyleSheet.create({
    paddingHorizontal: 6, 
    paddingVertical: 2, 
    borderRadius: 8, 
-   color: "#fff" 
+   color: "#fff",
+   alignSelf: "flex-end"
 },
   statusDone: { 
    backgroundColor: "#4BB543" 

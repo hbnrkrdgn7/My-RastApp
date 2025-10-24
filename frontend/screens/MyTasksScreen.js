@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, Alert } from "react-native";
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, Alert, Modal } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Ionicons from "react-native-vector-icons/Ionicons";
-import { useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import TaskDetail from "./TaskDetail"; 
 
-// 🔹 Alt bar component
+// Alt bar
 const BottomBar = ({ navigation }) => (
   <View style={styles.bottomBar}>
     <TouchableOpacity onPress={() => navigation.navigate("Home")}>
@@ -22,45 +22,51 @@ const MyTasksScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [tasks, setTasks] = useState([]);
   const [userId, setUserId] = useState(null);
- 
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  // 🔹 AsyncStorage’den kullanıcı ID'sini al
- useEffect(() => {
-  const fetchUserIdAndTasks = async () => {
-    const user = await AsyncStorage.getItem("user");
-    console.log("AsyncStorage user:", user);
-    if (user) {
-      const parsed = JSON.parse(user);
-      console.log("Parsed user:", parsed);
-      setUserId(parsed.id);
-      fetchTasks(parsed.id); // ✅ userId gelince görevleri çek
+  // Kullanıcı ID ve görevleri çek
+  useEffect(() => {
+    const fetchUserIdAndTasks = async () => {
+      const user = await AsyncStorage.getItem("user");
+      if (user) {
+        const parsed = JSON.parse(user);
+        setUserId(parsed.id);
+        fetchTasks(parsed.id);
+      }
+    };
+    fetchUserIdAndTasks();
+  }, []);
+
+  const fetchTasks = async (id) => {
+    try {
+      const res = await axios.get(`http://192.168.0.248:5000/api/tasks/user/${id}`);
+      setTasks(res.data);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Hata", "Görevler yüklenemedi.");
     }
   };
-  fetchUserIdAndTasks();
-}, []);
 
-// 🔹 Backend’den görevleri çek
-const fetchTasks = async (id) => {
-  try {
-    const res = await axios.get(`http://192.168.0.248:5000/api/tasks/user/${id}`);
-    console.log("Fetched tasks:", res.data);
-    setTasks(res.data);
-  } catch (err) {
-    console.error("Error fetching tasks:", err);
-    Alert.alert("Hata", "Görevler yüklenemedi.");
-  }
-};
-
-  // 🔹 Her bir görevi render et
   const renderTask = ({ item }) => {
     const statusStyle =
       item.status === "Done" ? styles.statusDone :
       item.status === "In Progress" ? styles.statusProgress :
       item.status === "Backlog" ? styles.statusBacklog :
       styles.statusTodo;
-
+ const taskWithAssignee = {
+    ...item,
+    assigned_to_name: item.assigned_to_name || (item.assigned_to?.name ?? "Unassigned"),
+    assigned_to_avatar: item.assigned_to_avatar || (item.assigned_to?.avatar ?? null),
+  };
     return (
-      <View style={styles.taskCard}>
+      <TouchableOpacity
+        style={styles.taskCard}
+        onPress={() => {
+          setSelectedTask(taskWithAssignee);   // seçilen task
+          setModalVisible(true);   // modal aç
+        }}
+      >
         <Text style={styles.taskTitle}>{item.title}</Text>
         <Text style={styles.taskDescription} numberOfLines={3}>
           {item.description || "No description"}
@@ -76,27 +82,43 @@ const fetchTasks = async (id) => {
             <Text style={styles.assigneeText} numberOfLines={1}>{item.assigned_to_name}</Text>
           </View>
         )}
-            
+
         <View style={styles.taskFooter}>
           <Text style={styles.taskDate}>
             📅 {new Date(item.created_at).toLocaleDateString("tr-TR")}
           </Text>
           <Text style={[styles.statusBadge, statusStyle]}>{item.status}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
   return (
-    <View style={[styles.taskCard, { paddingTop: insets.top + 10 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
       <Text style={styles.header}>My Tasks</Text>
 
       <FlatList
         data={tasks}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderTask}
-        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 150 }}
+        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 100 }}
       />
+
+      {/* TaskDetail Modal */}
+      <Modal
+        visible={modalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        {selectedTask && (
+          <TaskDetail
+            task={selectedTask}
+            onClose={() => setModalVisible(false)}
+            refresh={() => fetchTasks(userId)}
+          />
+        )}
+      </Modal>
 
       <BottomBar navigation={navigation} />
     </View>
@@ -107,15 +129,8 @@ export default MyTasksScreen;
 
 // ---------- STYLES ----------
 const styles = StyleSheet.create({
-  container: { 
-   flex: 1, 
-   backgroundColor: "#F9F9FB" 
-},
-  header: { 
-   fontSize: 22, 
-   fontWeight: "700", 
-   margin: 15 
-},
+  container: { flex: 1, backgroundColor: "#F9F9FB" },
+  header: { fontSize: 22, fontWeight: "700", margin: 15 },
   taskCard: {
     backgroundColor: "#fff",
     marginVertical: 5,
@@ -127,71 +142,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3
   },
-  taskTitle: { 
-   fontWeight: "700", 
-   fontSize: 16 
-},
-  taskDescription: { 
-   fontSize: 14, 
-   color: "#333", 
-   marginTop: 5 
-},
-  assigneeTag: { 
-   flexDirection: "row", 
-   alignItems: "center",
-   marginTop: 8 
-},
-  assigneeAvatar: {
-   width: 30, 
-   height: 30, 
-   borderRadius: 15 
-},
-  assigneeIcon: {
-   width: 30, 
-   height: 30, 
-   borderRadius: 15, 
-   backgroundColor: "#eee", 
-   justifyContent: "center", 
-   alignItems: "center" 
-},
-  assigneeIconText: { 
-    fontSize: 16 
-  },
-  assigneeText: { 
-    marginLeft: 6,
-    fontSize: 14, 
-    maxWidth: 150 
-  },
-  taskFooter: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
-    marginTop: 8 
-  },
-  taskDate: { 
-    fontSize: 12, 
-    color: "#888" 
-  },
-  statusBadge: { 
-    fontSize: 12, 
-    fontWeight: "700", 
-    paddingHorizontal: 6, 
-    paddingVertical: 2, 
-    borderRadius: 8, 
-    color: "#fff" 
-  },
-  statusDone: { 
-    backgroundColor: "#4BB543" 
-  },
-  statusProgress: { 
-    backgroundColor: "#FFA500" 
-  },
-  statusBacklog: { 
-    backgroundColor: "#FF6347" 
-  },
-  statusTodo: { 
-    backgroundColor: "#7b2ff7" 
-
-  },
+  taskTitle: { fontWeight: "700", fontSize: 16 },
+  taskDescription: { fontSize: 14, color: "#333", marginTop: 5 },
+  assigneeTag: { flexDirection: "row", alignItems: "center", marginTop: 8 },
+  assigneeAvatar: { width: 30, height: 30, borderRadius: 15 },
+  assigneeIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#eee", justifyContent: "center", alignItems: "center" },
+  assigneeIconText: { fontSize: 16 },
+  assigneeText: { marginLeft: 6, fontSize: 14, maxWidth: 150 },
+  taskFooter: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
+  taskDate: { fontSize: 12, color: "#888" },
+  statusBadge: { fontSize: 12, fontWeight: "700", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, color: "#fff" },
+  statusDone: { backgroundColor: "#4BB543" },
+  statusProgress: { backgroundColor: "#FFA500" },
+  statusBacklog: { backgroundColor: "#FF6347" },
+  statusTodo: { backgroundColor: "#7b2ff7" },
   bottomBar: {
     position: "absolute",
     bottom: 0,
@@ -211,8 +175,5 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 10,
   },
-  bottomLinkText: { 
-    color: "#7b2ff7", 
-    fontWeight: "600", 
-    fontSize: 15 },
+  bottomLinkText: { color: "#7b2ff7", fontWeight: "600", fontSize: 15 },
 });

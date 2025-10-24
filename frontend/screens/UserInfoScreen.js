@@ -16,8 +16,7 @@ const avatarOptions = [
   "https://cdn-icons-png.flaticon.com/512/219/219974.png",
 ];
 
-
-const UserInfoScreen = ({ navigation }) => {
+const UserInfoScreen = ({ navigation, route }) => {
   const [userInfo, setUserInfo] = useState(null);
   const [editForm, setEditForm] = useState({ name: "", surname: "", email: "", profile_picture: "" });
   const [isEditing, setIsEditing] = useState(false);
@@ -73,6 +72,34 @@ const UserInfoScreen = ({ navigation }) => {
     }
   };
   
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      "Emin misiniz?",
+      "Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
+      [
+        { text: "Vazgeç", style: "cancel" }, 
+        {text:"Evet, Sil",
+          style:"destructive",
+          onPress: async () => {
+            try {
+              const userData = await AsyncStorage.getItem("user");
+              if (!userData) return;
+              const user = JSON.parse(userData);
+              console.log("Kullanıcı verisi:", user);
+              console.log("Silinecek kullanıcı ID:", user.id);
+              await axios.delete(`${API_URL}/users/userinfo/${user.id}`);
+              await AsyncStorage.removeItem("user");
+              Alert.alert("Hesabınız silindi.");
+              navigation.navigate("Login");
+            } catch (err) {
+              console.error(err);
+              Alert.alert("Hata", err.response?.data?.error || "Hesap silinemedi.");
+            }
+          },
+        },
+      ]
+    );
+  };
   if (!userInfo) return <Text style={{ marginTop: 50, textAlign: "center" }}>Yükleniyor...</Text>;
 
   return (
@@ -128,22 +155,44 @@ const UserInfoScreen = ({ navigation }) => {
       />
 
       {/* Düzenle / Kaydet Butonları */}
-      {isEditing ? (
-        <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>Kaydet</Text>
-        </TouchableOpacity>
-      ) : (
-        <TouchableOpacity style={styles.button} onPress={() => setIsEditing(true)}>
-          <Text style={styles.buttonText}>Düzenle</Text>
-        </TouchableOpacity>
-      )}
+{isEditing ? (
+  <TouchableOpacity style={styles.button} onPress={handleSave}>
+    <Text style={styles.buttonText}>Kaydet</Text>
+  </TouchableOpacity>
+) : (
+  <TouchableOpacity style={styles.button} onPress={() => setIsEditing(true)}>
+    <Text style={styles.buttonText}>Düzenle</Text>
+  </TouchableOpacity>
+)}
 
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: "#ccc" }]}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={[styles.buttonText, { color: "#333" }]}>Geri</Text>
-      </TouchableOpacity>
+{/* Geri / İptal Butonu */}
+<TouchableOpacity
+  style={[styles.button, { backgroundColor: "#ccc" }]}
+  onPress={() => {
+    if (isEditing) {
+      setIsEditing(false);
+      navigation.navigate("UserInfo");
+    } else {
+      navigation.goBack();
+    }
+  }}
+>
+  <Text style={[styles.buttonText, { color: "#333" }]}>
+    {isEditing ? "İptal" : "Geri"}
+  </Text>
+</TouchableOpacity>
+
+{/* Hesabı Sil Butonu, sadece düzenleme modunda ve en altta */}
+{isEditing && (
+  <View style={styles.deleteButtonContainer}>
+    <TouchableOpacity
+      style={[styles.button, { backgroundColor: "#ff4d4d" }]}
+      onPress={handleDeleteAccount}
+    >
+      <Text style={styles.buttonText}>Hesabı Sil</Text>
+    </TouchableOpacity>
+  </View>
+)}
     </ScrollView>
   );
 };
@@ -216,4 +265,11 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 28,
   },
+  deleteButtonContainer: {
+  position: "absolute",
+  bottom: 20,
+  left: 20,
+  right: 20,
+},
+
 });

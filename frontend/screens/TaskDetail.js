@@ -1,12 +1,4 @@
-/**
- * TaskDetail.js
- * 
- * Görev detaylarını görüntüleyen ve düzenleme işlemlerini yöneten modal
- * - Görev bilgilerini detaylı gösterim
- * - Assignee bilgileri (isim ve profil fotoğrafı)
- * - Görev düzenleme modal'ını açma
- * - Görev silme işlemi (onay ile)
- */
+
 
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert, } from "react-native";
@@ -23,16 +15,21 @@ import { deleteTask } from "../services/api"; // API çağrıları
  */
 const TaskDetail = ({ task, onClose, refresh }) => {
   const [editModalVisible, setEditModalVisible] = useState(false); // Düzenleme modal'ı durumu
-  const [currentTask, setCurrentTask] = useState(task); // Mevcut görev state'i
+  const [currentTask, setCurrentTask] = useState(null); // Mevcut görev state'i
   // Görev yoksa component render etme
-  if (!currentTask) return null;
+useEffect(() => {
+  // Prop olarak gelen task'i hemen state'e ata
+  if (task) {
+    setCurrentTask({
+      ...task,
+      assigned_to_name: task.assigned_to_name || "Unassigned",
+      assigned_to_avatar: task.assigned_to_avatar || null,
+    });
+  }
+}, [task]);
 
-  /**
-   * Görev silme işlemi
-   * - Kullanıcıdan onay al
-   * - Backend'e silme isteği gönder
-   * - Ana ekranı yenile ve modal'ı kapat
-   */
+  if (!currentTask) return null;
+  
   const handleDelete = async () => {
     Alert.alert("Delete Task", "Are you sure you want to delete this task?", [
       { text: "Cancel", style: "cancel" },
@@ -63,6 +60,15 @@ const TaskDetail = ({ task, onClose, refresh }) => {
     if (typeof refresh === "function") refresh();
     setEditModalVisible(false);
   };
+  const fetchUpdatedTask = async (taskId) => {
+  try {
+    const res = await fetch(`http:/192.168.0.248:5000/api/tasks/${taskId}`);
+    const data = await res.json();
+    setCurrentTask(data);
+  } catch (err) {
+    console.error("Task güncellenemedi:", err);
+  }
+};
 
   return (
     <View style={styles.overlay}>
@@ -170,12 +176,23 @@ const TaskDetail = ({ task, onClose, refresh }) => {
         transparent={true}
         onRequestClose={() => setEditModalVisible(false)}
       >
-        <AddTaskModal
-          onClose={() => setEditModalVisible(false)}
-          refresh={refresh}
-          task={currentTask}
-          onTaskUpdate={(updated) => setCurrentTask(updated)} // ✅ düzeltildi
-        />
+       <AddTaskModal
+  onClose={() => setEditModalVisible(false)}
+  refresh={refresh}
+  task={currentTask}
+  onTaskUpdate={(updated) => {
+    // 🔹 Güncel task'i state'e at
+    setCurrentTask(updated);  
+
+    // 🔹 Ana listeyi yenilemek istersen
+    if (typeof refresh === "function") refresh();
+
+    // 🔹 Modal'ı kapat
+    setEditModalVisible(false);
+  }}
+/>
+
+
 
       </Modal>
     </View>

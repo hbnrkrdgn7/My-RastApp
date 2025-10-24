@@ -52,12 +52,14 @@ export const createTask = async (req, res) => {
 };
 
 // GÖREV GÜNCELLEME
+// GÖREV GÜNCELLEME (assignee bilgisi ile)
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, status, assignee_id, updated_by } = req.body;
 
-    const result = await pool.query(
+    // 1️⃣ Task'i güncelle
+    const updateResult = await pool.query(
       `UPDATE tasks
        SET title = $1,
            description = $2,
@@ -70,14 +72,27 @@ export const updateTask = async (req, res) => {
       [title, description, status, assignee_id, updated_by, id]
     );
 
-    if (result.rows.length === 0)
+    if (updateResult.rows.length === 0)
       return res.status(404).json({ error: "Task not found" });
 
-    res.json(result.rows[0]);
+    // 2️⃣ Güncel task'i assignee bilgisi ile al
+    const result = await pool.query(
+      `SELECT t.*,
+              CONCAT(u.name, ' ', COALESCE(u.surname, '')) AS assigned_to_name,
+              u.profile_picture AS assigned_to_avatar
+       FROM tasks t
+       LEFT JOIN users u ON t.assignee_id = u.id
+       WHERE t.id = $1`,
+      [id]
+    );
+
+    res.json(result.rows[0]); // frontend artık assigned_to_name ve avatar alacak
   } catch (err) {
+    console.error("Task güncelleme hatası:", err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // GÖREV SİLME
 export const deleteTask = async (req, res) => {
