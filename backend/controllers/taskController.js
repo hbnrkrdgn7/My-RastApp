@@ -52,7 +52,6 @@ export const createTask = async (req, res) => {
 };
 
 // GÖREV GÜNCELLEME
-// GÖREV GÜNCELLEME (assignee bilgisi ile)
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;

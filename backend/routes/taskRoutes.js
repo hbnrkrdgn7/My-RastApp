@@ -5,13 +5,20 @@ import { getTasks, createTask, updateTask, deleteTask } from "../controllers/tas
 const router = express.Router();
 
 // Kullanıcıya atanmış görevleri getir
+// Kullanıcıya atanmış görevleri getir (assignee bilgileri ile)
 router.get("/user/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     console.log("Fetching tasks for user:", userId);
 
     const result = await pool.query(
-      "SELECT * FROM tasks WHERE assignee_id = $1 ORDER BY created_at DESC",
+      `SELECT t.*,
+              CONCAT(u.name, ' ', COALESCE(u.surname, '')) AS assigned_to_name,
+              u.profile_picture AS assigned_to_avatar
+       FROM tasks t
+       LEFT JOIN users u ON t.assignee_id = u.id
+       WHERE t.assignee_id = $1
+       ORDER BY t.created_at DESC`,
       [userId]
     );
 
@@ -21,6 +28,7 @@ router.get("/user/:userId", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 //  Proje görevlerini listele

@@ -1,7 +1,3 @@
-/**
- * HomeScreen.js
- * Ana ekran
- */
 
 import React, { useEffect, useState } from "react";
 import {
@@ -21,6 +17,7 @@ const HomeScreen = ({ navigation }) => {
   const [searchText, setSearchText] = useState("");
   const [selectedTask, setSelectedTask] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  
   const projectId = 1;
 
   const fetchTasks = async () => {
@@ -79,7 +76,38 @@ const HomeScreen = ({ navigation }) => {
 };
 
 
-  useEffect(() => { fetchTasks(); }, []);
+useEffect(() => {
+
+  fetchTasks();
+  const unsubscribe = navigation.addListener('focus', () => {
+    // AsyncStorage’dan kullanıcı bilgilerini yükle
+    const loadUser = async () => {
+      const user = JSON.parse(await AsyncStorage.getItem("user"));
+      if (user) {
+        setUserName(user.name);
+        setUserAvatar(user.avatar);
+      }
+    };
+    loadUser();
+
+    // Profil güncellemesi geldi mi?
+    const updatedUser = navigation.getState()?.routes?.find(r => r.name === "Home")?.params?.updatedUser;
+    if (updatedUser) {
+      setUserName(updatedUser.name);
+      setUserAvatar(updatedUser.avatar);
+    }
+
+    // Task güncellemeleri varsa fetch et
+    if (navigation.getState()?.routes?.some(r => r.params?.updatedTaskId)) {
+      fetchTasks();
+    }
+  });
+
+  return unsubscribe;
+}, [navigation]);
+
+
+
 
   const handleLogoPress = () => { Linking.openURL("https://www.rastmobile.com/tr"); };
 

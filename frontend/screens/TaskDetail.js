@@ -18,14 +18,7 @@ const TaskDetail = ({ task, onClose, refresh }) => {
   const [currentTask, setCurrentTask] = useState(null); // Mevcut görev state'i
   // Görev yoksa component render etme
 useEffect(() => {
-  // Prop olarak gelen task'i hemen state'e ata
-  if (task) {
-    setCurrentTask({
-      ...task,
-      assigned_to_name: task.assigned_to_name || "Unassigned",
-      assigned_to_avatar: task.assigned_to_avatar || null,
-    });
-  }
+  setCurrentTask(task);
 }, [task]);
 
   if (!currentTask) return null;
@@ -62,7 +55,7 @@ useEffect(() => {
   };
   const fetchUpdatedTask = async (taskId) => {
   try {
-    const res = await fetch(`http:/192.168.0.248:5000/api/tasks/${taskId}`);
+    const res = await fetch(`http:/172.2.1.41:5000/api/tasks/${taskId}`);
     const data = await res.json();
     setCurrentTask(data);
   } catch (err) {
@@ -130,25 +123,40 @@ useEffect(() => {
             </Text>
           </View>
 
-          <View style={styles.statusDateRow}>
-            <View
-              style={[
-                styles.statusBadge,
-                currentTask.status === "Done"
-                  ? styles.statusDone
-                  : currentTask.status === "In Progress"
-                    ? styles.statusProgress
-                    : styles.statusTodo,
-              ]}
-            >
-              <Text style={styles.statusText}>{currentTask.status}</Text>
-            </View>
-            <Text style={styles.dateText}>
-              {new Date(
-                currentTask.updated_at || currentTask.created_at
-              ).toLocaleDateString()}
-            </Text>
-          </View>
+      <View style={styles.statusDateRow}>
+  <View
+    style={[
+      styles.statusBadge,
+      currentTask.status === "Done"
+        ? styles.statusDone
+        : currentTask.status === "In Progress"
+          ? styles.statusProgress
+          : styles.statusTodo,
+    ]}
+  >
+    <Text style={styles.statusText}>{currentTask.status}</Text>
+  </View>
+
+  {/* Tarih Alanı */}
+  <View style={{ alignItems: "flex-end" }}>
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <Ionicons name="time-outline" size={14} color="#999" style={{ marginRight: 4 }} />
+      <Text style={styles.dateText}>
+        Eklendi: {new Date(currentTask.created_at).toLocaleDateString()}
+      </Text>
+    </View>
+
+    {currentTask.updated_at &&
+      currentTask.updated_at !== currentTask.created_at && (
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+          <Ionicons name="refresh-outline" size={14} color="#999" style={{ marginRight: 4 }} />
+          <Text style={styles.dateText}>
+            Son Güncelleme: {new Date(currentTask.updated_at).toLocaleDateString()}
+          </Text>
+        </View>
+      )}
+  </View>
+</View>
 
           <Text style={styles.descLabel}>Description</Text>
           <View style={styles.descBox}>

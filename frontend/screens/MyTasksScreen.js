@@ -25,28 +25,58 @@ const MyTasksScreen = ({ navigation }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Kullanıcı ID ve görevleri çek
+  const [page, setPage] = useState(1);       // sayfa numarası
+  const [limit] = useState(10);             // sayfa başına görev sayısı
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true); // sonraki sayfa var mı
+
   useEffect(() => {
     const fetchUserIdAndTasks = async () => {
       const user = await AsyncStorage.getItem("user");
       if (user) {
         const parsed = JSON.parse(user);
         setUserId(parsed.id);
-        fetchTasks(parsed.id);
+        fetchTasks(parsed.id, 1);  // ilk sayfa
       }
     };
     fetchUserIdAndTasks();
   }, []);
 
-  const fetchTasks = async (id) => {
+  const fetchTasks = async (id, nextPage = 1) => {
+    if (loading) return;
+    setLoading(true);
+
     try {
-      const res = await axios.get(`http://192.168.0.248:5000/api/tasks/user/${id}`);
-      setTasks(res.data);
+      // Backend endpoint'i değişmeyecek, biz tüm taskları alıyoruz ve slice ile sayfalıyoruz
+      const res = await axios.get(`http://172.2.1.41:5000/api/tasks/user/${id}`);
+      const allTasks = res.data || [];
+
+      const startIndex = (nextPage - 1) * limit;
+      const endIndex = startIndex + limit;
+      const newTasks = allTasks.slice(startIndex, endIndex);
+
+      if (nextPage === 1) {
+        setTasks(newTasks);
+      } else {
+        setTasks(prev => [...prev, ...newTasks]);
+      }
+
+      setHasMore(endIndex < allTasks.length);
+      setPage(nextPage);
     } catch (err) {
       console.error(err);
       Alert.alert("Hata", "Görevler yüklenemedi.");
+    } finally {
+      setLoading(false);
     }
   };
+
+  const loadMore = () => {
+    if (hasMore) fetchTasks(userId, page + 1);
+  };
+
+  // renderTask ve modal mantığı değişmeyecek
+
 
   const renderTask = ({ item }) => {
     const statusStyle =
@@ -98,11 +128,29 @@ const MyTasksScreen = ({ navigation }) => {
       <Text style={styles.header}>My Tasks</Text>
 
       <FlatList
-        data={tasks}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderTask}
-        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 100 }}
-      />
+  data={tasks}
+  keyExtractor={(item) => item.id.toString()}
+  renderItem={renderTask}
+  contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 100 }}
+  ListFooterComponent={
+    hasMore ? (
+      <TouchableOpacity
+        style={{
+          margin: 15,
+          padding: 12,
+          backgroundColor: "#7b2ff7",
+          borderRadius: 10,
+          alignItems: "center"
+        }}
+        onPress={() => fetchTasks(userId, page + 1)}
+      >
+        <Text style={{ color: "#fff", fontWeight: "700" }}>
+          {loading ? "Yükleniyor..." : "Daha Fazla Göster"}
+        </Text>
+      </TouchableOpacity>
+    ) : null
+  }
+/>
 
       {/* TaskDetail Modal */}
       <Modal
@@ -112,11 +160,17 @@ const MyTasksScreen = ({ navigation }) => {
         onRequestClose={() => setModalVisible(false)}
       >
         {selectedTask && (
-          <TaskDetail
-            task={selectedTask}
-            onClose={() => setModalVisible(false)}
-            refresh={() => fetchTasks(userId)}
-          />
+          // MyTasksScreen.js
+<TaskDetail
+  task={selectedTask}
+  onClose={() => setModalVisible(false)}
+ refresh={() => {
+    fetchTasks(userId); // sadece MyTasks ekranını yenile
+}}
+
+
+/>
+
         )}
       </Modal>
 

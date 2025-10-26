@@ -47,7 +47,7 @@ const handleChangePassword = async () => {
     }
 
     // 2) isteği gönder
-    const res = await axios.put(`http://192.168.0.248:5000/api/users/changepassword/${userId}`, {
+    const res = await axios.put(`http://172.2.1.41:5000/api/users/changepassword/${userId}`, {
       currentPassword,
       newPassword
     });
@@ -69,36 +69,36 @@ const handleChangePassword = async () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Şifre Değiştir</Text>
+      <Text style={styles.title}>Change Password</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Mevcut Şifre"
+        placeholder="Current Password"
         secureTextEntry
         value={currentPassword}
         onChangeText={setCurrentPassword}
       />
       <TextInput
         style={styles.input}
-        placeholder="Yeni Şifre"
+        placeholder="New Password"
         secureTextEntry
         value={newPassword}
         onChangeText={setNewPassword}
       />
       <TextInput
         style={styles.input}
-        placeholder="Yeni Şifreyi Onayla"
+        placeholder="Confirm New Password"
         secureTextEntry
         value={confirmPassword}
         onChangeText={setConfirmPassword}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleChangePassword}>
-        <Text style={styles.buttonText}>Şifreyi Değiştir</Text>
+        <Text style={styles.buttonText}>Save</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={[styles.button, styles.cancel]} onPress={() => navigation.goBack()}>
-        <Text style={[styles.buttonText, { color: "#333" }]}>İptal</Text>
+        <Text style={[styles.buttonText, { color: "#333" }]}>Cancel</Text>
       </TouchableOpacity>
     </View>
   );

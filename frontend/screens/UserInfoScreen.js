@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView,
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_URL = "http://192.168.0.248:5000/api"; // Backend URL
+const API_URL = "http://172.2.1.41:5000/api"; // Backend URL
 
 const avatarOptions = [
   "https://cdn-icons-png.flaticon.com/512/219/219983.png",
@@ -52,26 +52,29 @@ const UserInfoScreen = ({ navigation, route }) => {
   };
 
   const handleSave = async () => {
-    try {
-      const userData = await AsyncStorage.getItem("user");
-      if (!userData) return;
+  try {
+    const userData = await AsyncStorage.getItem("user");
+    if (!userData) return;
 
-      const user = JSON.parse(userData);
-      const res = await axios.put(`${API_URL}/users/userinfo/${user.id}`, editForm);
+    const user = JSON.parse(userData);
+    const res = await axios.put(`${API_URL}/users/userinfo/${user.id}`, editForm);
 
-      setUserInfo(res.data);
-      setIsEditing(false);
+    setUserInfo(res.data);
+    setIsEditing(false);
 
-      // Güncellenen kullanıcıyı AsyncStorage’a kaydet
-      await AsyncStorage.setItem("user", JSON.stringify(res.data));
+    // Güncellenen kullanıcıyı AsyncStorage’a kaydet
+    await AsyncStorage.setItem("user", JSON.stringify(res.data));
 
-      Alert.alert("Başarılı", "Bilgiler güncellendi!");
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Hata", err.response?.data?.error || "Bilgiler güncellenemedi.");
-    }
-  };
-  
+    // ✅ HomeScreen’e güncellenen kullanıcıyı gönder
+    navigation.navigate("Home", { updatedUser: res.data });
+
+    Alert.alert("Başarılı", "Bilgiler güncellendi!");
+  } catch (err) {
+    console.error(err);
+    Alert.alert("Hata", err.response?.data?.error || "Bilgiler güncellenemedi.");
+  }
+};
+
   const handleDeleteAccount = async () => {
     Alert.alert(
       "Emin misiniz?",
@@ -106,7 +109,7 @@ const UserInfoScreen = ({ navigation, route }) => {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Başlık */}
       <Text style={styles.title}>
-        {isEditing ? "Kullanıcı Bilgilerini Düzenle" : "Kullanıcı Bilgileri"}
+        {isEditing ? "Edit User Information" : "User Information"}
       </Text>
 
       {/* Avatar */}
@@ -157,11 +160,11 @@ const UserInfoScreen = ({ navigation, route }) => {
       {/* Düzenle / Kaydet Butonları */}
 {isEditing ? (
   <TouchableOpacity style={styles.button} onPress={handleSave}>
-    <Text style={styles.buttonText}>Kaydet</Text>
+    <Text style={styles.buttonText}>Save</Text>
   </TouchableOpacity>
 ) : (
   <TouchableOpacity style={styles.button} onPress={() => setIsEditing(true)}>
-    <Text style={styles.buttonText}>Düzenle</Text>
+    <Text style={styles.buttonText}>Edit</Text>
   </TouchableOpacity>
 )}
 
@@ -178,7 +181,7 @@ const UserInfoScreen = ({ navigation, route }) => {
   }}
 >
   <Text style={[styles.buttonText, { color: "#333" }]}>
-    {isEditing ? "İptal" : "Geri"}
+    {isEditing ? "Cancel" : "Back"}
   </Text>
 </TouchableOpacity>
 
@@ -189,7 +192,7 @@ const UserInfoScreen = ({ navigation, route }) => {
       style={[styles.button, { backgroundColor: "#ff4d4d" }]}
       onPress={handleDeleteAccount}
     >
-      <Text style={styles.buttonText}>Hesabı Sil</Text>
+      <Text style={styles.buttonText}>Delete Account</Text>
     </TouchableOpacity>
   </View>
 )}

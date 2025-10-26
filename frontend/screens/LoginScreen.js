@@ -1,17 +1,8 @@
-/**
- * LoginScreen.js
- * 
- * Kullanıcı girişi ve kayıt işlemlerini yöneten ana ekran
- * - Kullanıcı girişi (email/password)
- * - Yeni kullanıcı kaydı (8 farklı avatar seçeneği ile)
- * - Şifre validasyonu (minimum 6 karakter)
- * - AsyncStorage ile kullanıcı verisi saklama
- */
-
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Alert, Image, ScrollView} from "react-native";
-import { loginUser, registerUser } from "../services/api"; // Backend API çağrıları
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Yerel veri saklama
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Alert, Image, ScrollView } from "react-native";
+import { Ionicons } from "@expo/vector-icons"; // 👈 Eklendi
+import { loginUser, registerUser } from "../services/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
@@ -23,53 +14,58 @@ const LoginScreen = ({ navigation }) => {
   const [regPassword, setRegPassword] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState(null);
 
-  /**
-   * Profil fotoğrafı seçenekleri
-   * Flaticon'dan alınan 8 farklı avatar seçeneği
-   * Kayıt sırasında kullanıcı bu avatarlardan birini seçebilir
-   */
   const avatarOptions = [
-    "https://cdn-icons-png.flaticon.com/512/219/219983.png", // Erkek avatar
-    "https://cdn-icons-png.flaticon.com/512/219/219970.png", // Kadın avatar
-    "https://cdn-icons-png.flaticon.com/512/219/219968.png", // Erkek avatar 2
-    "https://cdn-icons-png.flaticon.com/512/219/219964.png", // Kadın avatar 2
-    "https://cdn-icons-png.flaticon.com/512/219/219960.png", // Erkek avatar 3
-    "https://cdn-icons-png.flaticon.com/512/219/219956.png", // Kadın avatar 3
-    "https://cdn-icons-png.flaticon.com/512/219/219971.png", // Kadın avatar 4
-    "https://cdn-icons-png.flaticon.com/512/219/219974.png", // Kadın avatar 5
+    "https://cdn-icons-png.flaticon.com/512/219/219983.png",
+    "https://cdn-icons-png.flaticon.com/512/219/219970.png",
+    "https://cdn-icons-png.flaticon.com/512/219/219968.png",
+    "https://cdn-icons-png.flaticon.com/512/219/219964.png",
+    "https://cdn-icons-png.flaticon.com/512/219/219960.png",
+    "https://cdn-icons-png.flaticon.com/512/219/219956.png",
+    "https://cdn-icons-png.flaticon.com/512/219/219971.png",
+    "https://cdn-icons-png.flaticon.com/512/219/219974.png",
   ];
 
-  /**
-   * Kullanıcı giriş işlemi
-   * - Email ve şifre ile backend'e giriş isteği
-   * - Başarılı girişte kullanıcı verisini AsyncStorage'a kaydet
-   * - HomeScreen'e yönlendir
-   */
-  const handleLogin = async () => {
-    console.log("Giriş butonuna basıldı ✅");
-    try {
-      const res = await loginUser({ email, password });
-      if (res.user) {
-        console.log("Giriş başarılı, Home'a yönlendiriliyor...");
-
-        // ✅ Kullanıcı ID'sini local'e kaydet
-       await AsyncStorage.setItem("user", JSON.stringify(res.user));
-      console.log("✅ Kullanıcı AsyncStorage'a kaydedildi:", res.user);
-
-  navigation.replace("Home");
-      } else {
-        console.log("Yanıt geldi ama user yok:", res);
-      }
-    } catch (err) {
-      console.log("Giriş hatası:", err);
-      Alert.alert("Giriş Başarısız", "E-posta veya şifre hatalı.");
-    }
+  // 🔹 Ortak sıfırlama fonksiyonu
+  const resetRegisterForm = () => {
+    setRegisterVisible(false);
+    setRegName("");
+    setRegLastName("");
+    setRegEmail("");
+    setRegPassword("");
+    setSelectedAvatar(null);
   };
 
+const handleLogin = async () => {
+  try {
+    const res = await loginUser({ email, password });
 
-  const handleRegister = async () => {
-  console.log("Kayıt butonuna basıldı ✅");
+    if (res?.user) {
+      await AsyncStorage.setItem("user", JSON.stringify(res.user));
+      navigation.replace("Home");
+    }
+  } catch (err) {
+    console.log("Giriş hatası:", err);
 
+    // Axios hatasını yakala
+    if (err.response) {
+      const status = err.response.status;
+      const message = err.response.data?.error;
+
+      if (status === 404 && message === "User not found") {
+        Alert.alert("Hata", "Bu e-posta adresine ait bir hesap bulunamadı!");
+      } else if (status === 401) {
+        Alert.alert("Hata", "E-posta veya şifre hatalı!");
+      } else {
+        Alert.alert("Hata", message || "Giriş işlemi başarısız oldu!");
+      }
+    } else {
+      Alert.alert("Hata", "Giriş işlemi başarısız oldu!");
+    }
+  }
+};
+
+
+ const handleRegister = async () => {
   if (!regName || !regLastName || !regEmail || !regPassword) {
     Alert.alert("Uyarı", "Tüm alanları doldurmanız gerekiyor!");
     return;
@@ -86,59 +82,37 @@ const LoginScreen = ({ navigation }) => {
   }
 
   try {
-    const res = await registerUser({
-      name: regName,
-      surname: regLastName,
-      email: regEmail,
-      password: regPassword,
-      profile_picture: selectedAvatar,
-    });
+  const res = await registerUser({
+    name: regName,
+    surname: regLastName,
+    email: regEmail,
+    password: regPassword,
+    profile_picture: selectedAvatar,
+  });
 
-    // ✅ Kayıt başarılıysa
-    if (res.user) {
-      Alert.alert("Başarılı", "Kayıt başarılı! Giriş yapabilirsiniz.");
-
-      setRegisterVisible(false);
-      setRegName("");
-      setRegLastName("");
-      setRegEmail("");
-      setRegPassword("");
-      setSelectedAvatar(null);
-      return;
-    }
-
-    // Beklenmedik durumlar
-    Alert.alert("Hata", "Kayıt işlemi başarısız oldu!");
-  } catch (err) {
-    console.log("Kayıt hatası:", err);
-
-    // 🔹 Backend'ten gelen "Bu e-posta zaten kayıtlı." hatasını yakala
-    const errorMessage =
-      err.response?.data?.error ||
-      err.message ||
-      "Kayıt işlemi başarısız oldu.";
-
-    if (errorMessage.includes("Bu e-posta zaten kayıtlı")) {
-      Alert.alert("Uyarı", "Bu e-posta zaten kullanılmakta!");
-    } else {
-      Alert.alert("Hata", errorMessage);
-    }
+  if (res?.user) {
+    Alert.alert("Başarılı", "Kayıt başarılı! Giriş yapabilirsiniz.");
+    setRegisterVisible(false);
+    setRegName(""); setRegLastName(""); setRegEmail(""); setRegPassword(""); setSelectedAvatar(null);
+    return;
   }
-};
+} catch (err) {
+  console.log("Kayıt hatası detay:", err.response);
+  const message = err.response?.data?.error || "Kayıt işlemi başarısız oldu!";
+  Alert.alert("Uyarı", message);
+}
 
+ };
+ 
   return (
     <View style={styles.container}>
-      <Image
-        source={require("../assets/rast-mobile-logo.png")} // ✅ Logonun yolu
-        style={styles.logo}
-        resizeMode="contain"
-      />
-      <Text style={styles.title}>Hoş Geldiniz 👋</Text>
-      <Text style={styles.subtitle}>Hesabınıza giriş yap</Text>
+      <Image source={require("../assets/rast-mobile-logo.png")} style={styles.logo} resizeMode="contain" />
+      <Text style={styles.title}>Welcome 👋</Text>
+      <Text style={styles.subtitle}>Login to Your Account</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="E-posta"
+        placeholder="E-mail"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -146,77 +120,59 @@ const LoginScreen = ({ navigation }) => {
       />
       <TextInput
         style={styles.input}
-        placeholder="Şifre"
+        placeholder="Password"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
       />
 
       <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
-        <Text style={styles.loginText}>Giriş Yap</Text>
+        <Text style={styles.loginText}>Login</Text>
       </TouchableOpacity>
 
       <Text style={styles.registerText}>
-        Hesabın yok mu?{" "}
-        <Text
-          style={styles.registerLink}
-          onPress={() => setRegisterVisible(true)}
-        >
-          Hesap oluştur
+        Don't you have an account?{" "}
+        <Text style={styles.registerLink} onPress={() => setRegisterVisible(true)}>
+          Create an account
         </Text>
       </Text>
 
       {/* 🔹 Kayıt Modalı */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={registerVisible}
-        onRequestClose={() => setRegisterVisible(false)}
-      >
+      <Modal animationType="slide" transparent={true} visible={registerVisible} onRequestClose={() => setRegisterVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Hesap Oluştur</Text>
-            
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <TextInput
-                style={styles.input}
-                placeholder="Ad"
-                value={regName}
-                onChangeText={setRegName}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Soyisim"
-                value={regLastName}
-                onChangeText={setRegLastName}
-              />
+            <Text style={styles.modalTitle}>Create an account</Text>
 
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <TextInput style={styles.input} placeholder="Name" value={regName} onChangeText={setRegName} />
+              <TextInput style={styles.input} placeholder="Surname" value={regLastName} onChangeText={setRegLastName} />
               <TextInput
                 style={styles.input}
-                placeholder="E-posta"
+                placeholder="E-mail"
                 value={regEmail}
                 onChangeText={setRegEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-            <TextInput
-              style={styles.input}
-              placeholder="Şifre (En az 6 karakter)"
-              value={regPassword}
-              onChangeText={setRegPassword}
-              secureTextEntry
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Password (At least 6 characters)"
+                value={regPassword}
+                onChangeText={setRegPassword}
+                secureTextEntry
+              />
 
               {/* Profil Fotoğrafı Seçimi */}
-              <Text style={styles.avatarLabel}>👤 Profil Fotoğrafı Seçin</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+                <Ionicons name="person-circle-outline" size={24} color="#7b2ff7" />
+                <Text style={styles.avatarLabel}>Choose a profile photo</Text>
+              </View>
+
               <View style={styles.avatarGrid}>
                 {avatarOptions.map((avatar, index) => (
                   <TouchableOpacity
                     key={index}
-                    style={[
-                      styles.avatarOption,
-                      selectedAvatar === avatar && styles.selectedAvatar
-                    ]}
+                    style={[styles.avatarOption, selectedAvatar === avatar && styles.selectedAvatar]}
                     onPress={() => setSelectedAvatar(avatar)}
                   >
                     <Image source={{ uri: avatar }} style={styles.avatarImage} />
@@ -225,22 +181,12 @@ const LoginScreen = ({ navigation }) => {
               </View>
 
               <TouchableOpacity style={styles.registerBtn} onPress={handleRegister}>
-                <Text style={styles.registerBtnText}>Kayıt Ol</Text>
+                <Text style={styles.registerBtnText}>Sign up</Text>
               </TouchableOpacity>
 
-            <TouchableOpacity 
-              style={styles.cancelButton}
-              onPress={() => {
-                setRegisterVisible(false);
-                setRegName("");
-                setRegLastName("");
-                setRegEmail("");
-                setRegPassword("");
-                setSelectedAvatar(null);
-              }}
-            >
-              <Text style={styles.cancelButtonText}>İptal</Text>
-            </TouchableOpacity>
+              <TouchableOpacity style={styles.cancelButton} onPress={resetRegisterForm}>
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
@@ -250,6 +196,7 @@ const LoginScreen = ({ navigation }) => {
 };
 
 export default LoginScreen;
+
 
 // ---------- Styles ----------
 const styles = StyleSheet.create({

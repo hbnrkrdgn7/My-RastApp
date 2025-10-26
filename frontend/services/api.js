@@ -10,7 +10,7 @@
 
 import axios from "axios";
 
-const API_URL = "http://192.168.0.248:5000/api"; // Backend API base URL
+const API_URL = "http://172.2.1.41:5000/api"; // Backend API base URL
 
 // TASK API FUNCTIONS 
 

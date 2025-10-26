@@ -11,29 +11,27 @@ import bcrypt from "bcryptjs";
 const router = express.Router();
 
 // Kullanıcı kaydı
-router.post("/register", async (req, res) => {
+// Kullanıcı girişi
+router.post("/login", async (req, res) => {
   try {
-    const { name, surname, email, password, profile_picture } = req.body;
+    const { email, password } = req.body;
 
-    if (!name || !surname || !email || !password) {
-      return res.status(400).json({ error: "Tüm alanlar zorunludur." });
+    // Kullanıcıyı bul
+    const result = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" }); // ✅ Burayı değiştirdik
     }
 
-    // E-posta kontrolü
-    const userExists = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
-    if (userExists.rows.length > 0) {
-      return res.status(400).json({ error: "Bu e-posta zaten kayıtlı." });
+    const user = result.rows[0];
+
+    // Şifre kontrolü
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      return res.status(401).json({ error: "Geçersiz şifre." });
     }
 
-    // Şifreyi hashle
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const result = await pool.query(
-      "INSERT INTO users (name, surname, email, password, profile_picture, created_at) VALUES ($1,$2,$3,$4,$5,NOW()) RETURNING id, name, surname, email, profile_picture",
-      [name, surname, email, hashedPassword, profile_picture || null]
-    );
-
-    res.json({ user: result.rows[0] });
+    delete user.password; // Şifreyi response'dan çıkar
+    res.json({ user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -212,6 +210,35 @@ router.delete("/userinfo/:userId", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// Kullanıcı kaydı
+router.post("/register", async (req, res) => {
+  try {
+    const { name, surname, email, password, profile_picture } = req.body;
+
+    if (!name || !surname || !email || !password) {
+      return res.status(400).json({ error: "Tüm alanlar zorunludur." });
+    }
+
+    // E-posta kontrolü
+    const userExists = await pool.query("SELECT * FROM users WHERE email=$1", [email]);
+    if (userExists.rows.length > 0) {
+      return res.status(400).json({ error: "Bu e-posta zaten kayıtlı." }); // ✅ 400 dönüyor
+    }
+
+    // Şifreyi hashle
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const result = await pool.query(
+      "INSERT INTO users (name, surname, email, password, profile_picture, created_at) VALUES ($1,$2,$3,$4,$5,NOW()) RETURNING id, name, surname, email, profile_picture",
+      [name, surname, email, hashedPassword, profile_picture || null]
+    );
+
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 // 👇 Tüm kullanıcıları getir
