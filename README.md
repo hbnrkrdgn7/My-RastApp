@@ -15,7 +15,6 @@ Modern ve kullanıcı dostu bir görev yönetim sistemi. React Native frontend v
 ### Görev Yönetimi
 - ✅ Görev oluşturma, düzenleme ve silme
 - ✅ 4 farklı durum: Backlog, To Do, In Progress, Done
-- ✅ Öncelik seviyeleri: Low, Medium, High
 - ✅ Görev atama (assignee)
 - ✅ Görev detayları görüntüleme
 - ✅ Tarih ve durum takibi
@@ -25,7 +24,6 @@ Modern ve kullanıcı dostu bir görev yönetim sistemi. React Native frontend v
 - ✅ Mor tema (#7b2ff7)
 - ✅ Profil fotoğrafları ile assignee gösterimi
 - ✅ Kullanıcı dostu modal'lar
-- ✅ Smooth animasyonlar
 
 ##  Teknolojiler
 
@@ -39,8 +37,10 @@ Modern ve kullanıcı dostu bir görev yönetim sistemi. React Native frontend v
 - **Node.js** - Runtime environment
 - **Express.js** - Web framework
 - **PostgreSQL** - Veritabanı
+- **Prisma (ORM)** - Veritabanı işlemleri
 - **bcryptjs** - Şifre hashleme
 - **CORS** - Cross-origin resource sharing
+- **Pagination** - Görev listelerinde sayfalama desteği
 
 ##  Kurulum
 
@@ -156,19 +156,38 @@ DELETE http://192.168.0.248:5000/api/tasks/1
 ### Proje Yapısı
 ```
 MyApp/
-├── frontend/
-│   ├── screens/
-│   │   ├── HomeScreen.js
-│   │   ├── LoginScreen.js
-│   │   ├── TaskDetail.js
-│   │   └── AddTaskModal.js
-│   └── services/
-│       └── api.js
 ├── backend/
 │   ├── controllers/
+│   │   ├── projectControllers.js
+│   │   └── taskController.js
 │   ├── routes/
-│   ├── migrations/
+│   │   ├── projectRoutes.js
+│   │   ├── taskRoutes.js
+│   │   └── users.js
+│   ├── db.js
 │   └── index.js
+├── frontend/
+│   ├── assets/
+│   ├── components/
+│   │   └── TaskCard.js
+│   ├── screens/
+│   │   ├── AddTaskModal.js
+│   │   ├── ChangePasswordScreen.js
+│   │   ├── HomeScreen.js
+│   │   ├── LoginScreen.js
+│   │   ├── MyTasksScreen.js
+│   │   ├── SettingsModal.js
+│   │   ├── SplashScreen.js
+│   │   ├── TaskDetail.js
+│   │   └── UserInfoScreen.js
+│   ├── services/
+│   │   └── api.js
+│   ├── App.js
+│   └── index.js
+├── generated/
+├── prisma/
+│   └── schema.prisma
+└── .env
 └── README.md
 ```
 
@@ -197,7 +216,6 @@ MyApp/
 ##  Gelecek Özellikler
 
 - [ ] Drag & drop görev taşıma
-- [ ] Görev filtreleme ve arama
 - [ ] Bildirim sistemi
 - [ ] Takım yönetimi
 - [ ] Gelişmiş raporlama
