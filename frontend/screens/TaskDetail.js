@@ -1,28 +1,21 @@
-
-
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert, } from "react-native";
-import Ionicons from "react-native-vector-icons/Ionicons"; // İkonlar için
-import AddTaskModal from "./AddTaskModal"; // Görev düzenleme modal'ı
-import { deleteTask } from "../services/api"; // API çağrıları
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Modal, Alert } from "react-native";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import AddTaskModal from "./AddTaskModal";
+import { deleteTask } from "../services/api";
 
-/**
- * TaskDetail Component
- * 
- * @param {Object} task - Görev objesi
- * @param {Function} onClose - Modal kapatma fonksiyonu
- * @param {Function} refresh - Ana ekranı yenileme fonksiyonu
- */
 const TaskDetail = ({ task, onClose, refresh }) => {
-  const [editModalVisible, setEditModalVisible] = useState(false); // Düzenleme modal'ı durumu
-  const [currentTask, setCurrentTask] = useState(null); // Mevcut görev state'i
-  // Görev yoksa component render etme
-useEffect(() => {
-  setCurrentTask(task);
-}, [task]);
+  const [editModalVisible, setEditModalVisible] = useState(false); 
+  const [currentTask, setCurrentTask] = useState(null); 
 
-  if (!currentTask) return null;
-  
+  // Başlangıçta task'i state'e ata
+  useEffect(() => {
+    setCurrentTask(task);
+  }, [task]);
+
+  if (!currentTask) return null; 
+
+  // Task silme fonksiyonu
   const handleDelete = async () => {
     Alert.alert("Delete Task", "Are you sure you want to delete this task?", [
       { text: "Cancel", style: "cancel" },
@@ -31,37 +24,23 @@ useEffect(() => {
         style: "destructive",
         onPress: async () => {
           try {
-            await deleteTask(currentTask.id);
-            if (typeof refresh === "function") {
-              refresh();
-            }
+            await deleteTask(currentTask.id); // API ile sil
+            if (typeof refresh === "function") refresh(); // Listeyi yenile
             onClose();
           } catch (err) {
-            console.error(
-              "Task silinemedi:",
-              err.response ? err.response.data : err.message
-            );
+            console.error("Task silinemedi:", err.response ? err.response.data : err.message);
           }
         },
       },
     ]);
   };
 
-  // ✅ Düzenleme sonrası Task'i güncelle
+  // Düzenleme sonrası güncel task'i ata
   const handleTaskUpdated = (updatedTask) => {
     setCurrentTask(updatedTask);
     if (typeof refresh === "function") refresh();
-    setEditModalVisible(false);
+    setEditModalVisible(false); 
   };
-  const fetchUpdatedTask = async (taskId) => {
-  try {
-    const res = await fetch(`http:/172.2.1.41:5000/api/tasks/${taskId}`);
-    const data = await res.json();
-    setCurrentTask(data);
-  } catch (err) {
-    console.error("Task güncellenemedi:", err);
-  }
-};
 
   return (
     <View style={styles.overlay}>
@@ -93,6 +72,7 @@ useEffect(() => {
 
         {/* BODY */}
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Proje bilgisi */}
           <View style={styles.projectContainer}>
             <View style={styles.projectIcon}>
               <Ionicons name="code-slash" size={22} color="#7b2ff7" />
@@ -107,6 +87,7 @@ useEffect(() => {
 
           <Text style={styles.taskTitle}>{currentTask.title}</Text>
 
+          {/* Atanan kişi */}
           <View style={styles.reportedContainer}>
             {currentTask.assigned_to_avatar ? (
               <Image source={{ uri: currentTask.assigned_to_avatar }} style={styles.assigneeAvatar} />
@@ -123,46 +104,54 @@ useEffect(() => {
             </Text>
           </View>
 
-      <View style={styles.statusDateRow}>
-  <View
-    style={[
-      styles.statusBadge,
-      currentTask.status === "Done"
-        ? styles.statusDone
-        : currentTask.status === "In Progress"
-          ? styles.statusProgress
-          : styles.statusTodo,
-    ]}
-  >
-    <Text style={styles.statusText}>{currentTask.status}</Text>
-  </View>
+          {/* Durum ve tarih */}
+          <View style={styles.statusDateRow}>
+            <View
+              style={[
+                styles.statusBadge,
+                currentTask.status === "Done"
+                  ? styles.statusDone
+                  : currentTask.status === "In Progress"
+                  ? styles.statusProgress
+                  : styles.statusTodo,
+              ]}
+            >
+              <Text style={styles.statusText}>{currentTask.status}</Text>
+            </View>
 
-  {/* Tarih Alanı */}
-  <View style={{ alignItems: "flex-end" }}>
-    <View style={{ flexDirection: "row", alignItems: "center" }}>
-      <Ionicons name="time-outline" size={14} color="#999" style={{ marginRight: 4 }} />
-      <Text style={styles.dateText}>
-        Eklendi: {new Date(currentTask.created_at).toLocaleDateString()}
-      </Text>
-    </View>
+            <View style={{ alignItems: "flex-end" }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Ionicons name="time-outline" size={14} color="#999" style={{ marginRight: 4 }} />
+                <Text style={styles.dateText}>
+                  Eklendi: {new Date(currentTask.created_at).toLocaleDateString("tr-TR", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                  })}
+                </Text>
+              </View>
 
-    {currentTask.updated_at &&
-      currentTask.updated_at !== currentTask.created_at && (
-        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
-          <Ionicons name="refresh-outline" size={14} color="#999" style={{ marginRight: 4 }} />
-          <Text style={styles.dateText}>
-            Son Güncelleme: {new Date(currentTask.updated_at).toLocaleDateString()}
-          </Text>
-        </View>
-      )}
-  </View>
-</View>
+              {currentTask.updated_at &&
+                currentTask.updated_at !== currentTask.created_at && (
+                  <View style={{ flexDirection: "row", alignItems: "center", marginTop: 2 }}>
+                    <Ionicons name="refresh-outline" size={14} color="#999" style={{ marginRight: 4 }} />
+                    <Text style={styles.dateText}>
+                      Son Güncelleme: {new Date(currentTask.updated_at).toLocaleDateString("tr-TR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </View>
+                )}
+            </View>
+          </View>
 
+          {/* Açıklama */}
           <Text style={styles.descLabel}>Description</Text>
           <View style={styles.descBox}>
             <Text style={styles.descText}>
-              {currentTask.description ||
-                "No detailed description provided for this task."}
+              {currentTask.description || "No detailed description provided for this task."}
             </Text>
           </View>
 
@@ -184,30 +173,22 @@ useEffect(() => {
         transparent={true}
         onRequestClose={() => setEditModalVisible(false)}
       >
-       <AddTaskModal
-  onClose={() => setEditModalVisible(false)}
-  refresh={refresh}
-  task={currentTask}
-  onTaskUpdate={(updated) => {
-    // 🔹 Güncel task'i state'e at
-    setCurrentTask(updated);  
-
-    // 🔹 Ana listeyi yenilemek istersen
-    if (typeof refresh === "function") refresh();
-
-    // 🔹 Modal'ı kapat
-    setEditModalVisible(false);
-  }}
-/>
-
-
-
+        <AddTaskModal
+          onClose={() => setEditModalVisible(false)}
+          refresh={refresh}
+          task={currentTask}
+          onTaskUpdate={(updated) => {
+            setCurrentTask(updated);  
+            if (typeof refresh === "function") refresh();
+            setEditModalVisible(false);
+          }}
+        />
       </Modal>
     </View>
   );
 };
 
-// ---------- STYLES ----------
+// Styles kodları
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,

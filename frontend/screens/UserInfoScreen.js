@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView,
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_URL = "http://172.2.1.41:5000/api"; // Backend URL
+const API_URL = "http://192.168.1.36:5000/api"; // Backend URL
 
 const avatarOptions = [
   "https://cdn-icons-png.flaticon.com/512/219/219983.png",
@@ -22,13 +22,12 @@ const UserInfoScreen = ({ navigation, route }) => {
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    fetchUserInfo();
+    fetchUserInfo(); // Kullanıcı bilgilerini çek
   }, []);
 
   const fetchUserInfo = async () => {
     try {
-      // ✅ AsyncStorage'dan giriş yapan kullanıcıyı al
-      const userData = await AsyncStorage.getItem("user");
+      const userData = await AsyncStorage.getItem("user"); // AsyncStorage'dan giriş yapan kullanıcı
       if (!userData) {
         Alert.alert("Hata", "Kullanıcı bilgisi bulunamadı.");
         navigation.goBack();
@@ -36,8 +35,7 @@ const UserInfoScreen = ({ navigation, route }) => {
       }
       const user = JSON.parse(userData);
 
-      // Backend’den detaylı kullanıcı bilgilerini çek
-      const res = await axios.get(`${API_URL}/users/userinfo/${user.id}`);
+      const res = await axios.get(`${API_URL}/users/userinfo/${user.id}`); // Backend'den detaylı bilgi
       setUserInfo(res.data);
       setEditForm({
         name: res.data.name,
@@ -52,28 +50,41 @@ const UserInfoScreen = ({ navigation, route }) => {
   };
 
   const handleSave = async () => {
-  try {
-    const userData = await AsyncStorage.getItem("user");
-    if (!userData) return;
+    const { name, surname, email } = editForm;
 
-    const user = JSON.parse(userData);
-    const res = await axios.put(`${API_URL}/users/userinfo/${user.id}`, editForm);
+    //  Ad ve soyad boş olamaz
+    if (!name.trim() || !surname.trim()) {
+      Alert.alert("Hata", "Ad ve soyad boş olamaz.");
+      return;
+    }
 
-    setUserInfo(res.data);
-    setIsEditing(false);
+    //  E-posta formatı kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email.trim() || !emailRegex.test(email)) {
+      Alert.alert("Hata", "Geçerli bir e-posta giriniz.");
+      return;
+    }
 
-    // Güncellenen kullanıcıyı AsyncStorage’a kaydet
-    await AsyncStorage.setItem("user", JSON.stringify(res.data));
+    try {
+      const userData = await AsyncStorage.getItem("user");
+      if (!userData) return;
 
-    // ✅ HomeScreen’e güncellenen kullanıcıyı gönder
-    navigation.navigate("Home", { updatedUser: res.data });
+      const user = JSON.parse(userData);
+      const res = await axios.put(`${API_URL}/users/userinfo/${user.id}`, editForm); // Backend'e güncelleme isteği
 
-    Alert.alert("Başarılı", "Bilgiler güncellendi!");
-  } catch (err) {
-    console.error(err);
-    Alert.alert("Hata", err.response?.data?.error || "Bilgiler güncellenemedi.");
-  }
-};
+      setUserInfo(res.data); // State'i güncelle
+      setIsEditing(false);
+
+      await AsyncStorage.setItem("user", JSON.stringify(res.data)); // AsyncStorage'ı güncelle
+
+      navigation.navigate("Home", { updatedUser: res.data }); // Home'e bilgi gönder
+
+      Alert.alert("Başarılı", "Bilgiler güncellendi!");
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Hata", err.response?.data?.error || "Bilgiler güncellenemedi.");
+    }
+  };
 
   const handleDeleteAccount = async () => {
     Alert.alert(
@@ -81,8 +92,8 @@ const UserInfoScreen = ({ navigation, route }) => {
       "Hesabınızı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.",
       [
         { text: "Vazgeç", style: "cancel" }, 
-        {text:"Evet, Sil",
-          style:"destructive",
+        { text: "Evet, Sil",
+          style: "destructive",
           onPress: async () => {
             try {
               const userData = await AsyncStorage.getItem("user");
@@ -90,10 +101,10 @@ const UserInfoScreen = ({ navigation, route }) => {
               const user = JSON.parse(userData);
               console.log("Kullanıcı verisi:", user);
               console.log("Silinecek kullanıcı ID:", user.id);
-              await axios.delete(`${API_URL}/users/userinfo/${user.id}`);
-              await AsyncStorage.removeItem("user");
+              await axios.delete(`${API_URL}/users/userinfo/${user.id}`); // Hesabı sil
+              await AsyncStorage.removeItem("user"); // Local'dan temizle
               Alert.alert("Hesabınız silindi.");
-              navigation.navigate("Login");
+              navigation.navigate("Login"); // Login sayfasına dön
             } catch (err) {
               console.error(err);
               Alert.alert("Hata", err.response?.data?.error || "Hesap silinemedi.");
@@ -103,7 +114,8 @@ const UserInfoScreen = ({ navigation, route }) => {
       ]
     );
   };
-  if (!userInfo) return <Text style={{ marginTop: 50, textAlign: "center" }}>Yükleniyor...</Text>;
+
+  if (!userInfo) return <Text style={{ marginTop: 50, textAlign: "center" }}>Yükleniyor...</Text>; 
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -158,49 +170,51 @@ const UserInfoScreen = ({ navigation, route }) => {
       />
 
       {/* Düzenle / Kaydet Butonları */}
-{isEditing ? (
-  <TouchableOpacity style={styles.button} onPress={handleSave}>
-    <Text style={styles.buttonText}>Save</Text>
-  </TouchableOpacity>
-) : (
-  <TouchableOpacity style={styles.button} onPress={() => setIsEditing(true)}>
-    <Text style={styles.buttonText}>Edit</Text>
-  </TouchableOpacity>
-)}
+      {isEditing ? (
+        <TouchableOpacity style={styles.button} onPress={handleSave}>
+          <Text style={styles.buttonText}>Save</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={styles.button} onPress={() => setIsEditing(true)}>
+          <Text style={styles.buttonText}>Edit</Text>
+        </TouchableOpacity>
+      )}
 
-{/* Geri / İptal Butonu */}
-<TouchableOpacity
-  style={[styles.button, { backgroundColor: "#ccc" }]}
-  onPress={() => {
-    if (isEditing) {
-      setIsEditing(false);
-      navigation.navigate("UserInfo");
-    } else {
-      navigation.goBack();
-    }
-  }}
->
-  <Text style={[styles.buttonText, { color: "#333" }]}>
-    {isEditing ? "Cancel" : "Back"}
-  </Text>
-</TouchableOpacity>
+      {/* Geri / İptal Butonu */}
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: "#ccc" }]}
+        onPress={() => {
+          if (isEditing) {
+            setIsEditing(false);
+            navigation.navigate("UserInfo");
+          } else {
+            navigation.goBack();
+          }
+        }}
+      >
+        <Text style={[styles.buttonText, { color: "#333" }]}>
+          {isEditing ? "Cancel" : "Back"}
+        </Text>
+      </TouchableOpacity>
 
-{/* Hesabı Sil Butonu, sadece düzenleme modunda ve en altta */}
-{isEditing && (
-  <View style={styles.deleteButtonContainer}>
-    <TouchableOpacity
-      style={[styles.button, { backgroundColor: "#ff4d4d" }]}
-      onPress={handleDeleteAccount}
-    >
-      <Text style={styles.buttonText}>Delete Account</Text>
-    </TouchableOpacity>
-  </View>
-)}
+      {/* Hesabı Sil Butonu, sadece düzenleme modunda */}
+      {isEditing && (
+        <View style={styles.deleteButtonContainer}>
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: "#ff4d4d" }]}
+            onPress={handleDeleteAccount}
+          >
+            <Text style={styles.buttonText}>Delete Account</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   );
 };
 
 export default UserInfoScreen;
+
+// Styles kodları
 
 const styles = StyleSheet.create({
   container: { 
@@ -269,10 +283,9 @@ const styles = StyleSheet.create({
     borderRadius: 28,
   },
   deleteButtonContainer: {
-  position: "absolute",
-  bottom: 20,
-  left: 20,
-  right: 20,
-},
-
+    position: "absolute",
+    bottom: 20,
+    left: 20,
+    right: 20,
+  },
 });

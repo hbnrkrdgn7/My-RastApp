@@ -1,94 +1,53 @@
-/**
- * api.js
- * 
- * Backend API çağrılarını yöneten servis dosyası
- * - Axios ile HTTP istekleri
- * - Task CRUD işlemleri
- * - User authentication ve management
- * - Error handling
- */
-
 import axios from "axios";
 
-const API_URL = "http://172.2.1.41:5000/api"; // Backend API base URL
+const API_URL = "http://192.168.1.36:5000/api";
 
-// TASK API FUNCTIONS 
-
-/**
- * Belirli proje altındaki görevleri getir
- * @param {number} projectId - Proje ID'si
- * @returns {Promise<Array>} Görev listesi
- */
+// Belirli proje altındaki görevleri getir
 export const getTasks = async (projectId) => {
   const res = await axios.get(`${API_URL}/tasks/${projectId}`);
-  return res.data;
+  return res.data; // Görev listesini döndür
 };
 
-/**
- * Yeni görev oluştur
- * @param {Object} task - Görev objesi
- * @returns {Promise<Object>} Oluşturulan görev
- */
+// Yeni görev oluştur
 export const createTask = async (task) => {
   const res = await axios.post(`${API_URL}/tasks`, task);
-  return res.data;
+  return res.data; // Oluşturulan görevi döndür
 };
 
-/**
- * Mevcut görevi güncelle
- * @param {number} id - Görev ID'si
- * @param {Object} task - Güncellenecek görev verileri
- * @returns {Promise<Object>} Güncellenen görev
- */
+// Mevcut görevi güncelle
 export const updateTask = async (id, task) => {
   const res = await axios.put(`${API_URL}/tasks/${id}`, task);
-  return res.data;
+  return res.data; // Güncellenmiş görevi döndür
 };
 
-/**
- * Görevi sil
- * @param {number} id - Görev ID'si
- * @returns {Promise<Object>} Silme sonucu
- */
+// Görevi sil
 export const deleteTask = async (id) => {
   const res = await axios.delete(`${API_URL}/tasks/${id}`);
-  return res.data;
+  return res.data; // Silme sonucunu döndür
 };
 
 // USER API FUNCTIONS 
 
-/**
- * Yeni kullanıcı kaydı
- * @param {Object} data - Kullanıcı kayıt verileri
- * @returns {Promise<Object>} Kayıt sonucu
- */
+// Yeni kullanıcı kaydı
 export const registerUser = async (data) => {
   const res = await axios.post(`${API_URL}/users/register`, data);
-  return res.data;
+  return res.data; // Kayıt sonucu
 };
 
-/**
- * Kullanıcı girişi
- * @param {Object} data - Giriş verileri (email, password)
- * @returns {Promise<Object>} Giriş sonucu ve kullanıcı bilgileri
- */
+// Kullanıcı girişi
 export const loginUser = async (data) => {
   const res = await axios.post(`${API_URL}/users/login`, data);
-  return res.data;
+  return res.data; // Giriş sonucu ve kullanıcı bilgileri
 };
 
-/**
- * Kullanıcı bilgilerini getir
- * @param {number} userId - Kullanıcı ID'si
- * @returns {Promise<Object>} Kullanıcı bilgileri
- */
+// Kullanıcı bilgilerini getir
 export const fetchUserInfo = async (userId) => {
   try {
     if (!userId) throw new Error("Geçersiz kullanıcı ID");
     const res = await axios.get(`${API_URL}/users/userinfo/${userId}`);
-    return res.data;
+    return res.data; // Kullanıcı bilgilerini döndür
   } catch (err) {
     console.error("Kullanıcı bilgisi alınamadı:", err.response?.data || err.message);
-    throw err;
+    throw err; // Hata varsa fırlat
   }
 };

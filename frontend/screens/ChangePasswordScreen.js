@@ -1,71 +1,86 @@
-// ChangePasswordScreen.js
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
 const ChangePasswordScreen = ({ navigation }) => {
+  // State'ler
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // sadece handleChangePassword fonksiyonunu değiştirin
-
-const handleChangePassword = async () => {
-  if (!currentPassword || !newPassword || !confirmPassword) {
-    Alert.alert("Hata", "Tüm alanları doldurun.");
-    return;
-  }
-  if (newPassword !== confirmPassword) {
-    Alert.alert("Hata", "Yeni şifre ve onay şifresi eşleşmiyor.");
-    return;
-  }
-  if (newPassword.length < 6) {
-    Alert.alert("Hata", "Yeni şifre en az 6 karakter olmalıdır.");
-    return;
-  }
-
-  try {
-    // 1) Önce "user" objesini al (login kodunda bu anahtarı kullanıyorsun)
-    const storedUserJson = await AsyncStorage.getItem("user");
-    // fallback: bazı yerlerde "userId" kaydetmiş olabilirsin
-    const storedUserId = await AsyncStorage.getItem("userId");
-
-    if (!storedUserJson && !storedUserId) {
-      Alert.alert("Hata", "Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.");
-      navigation.replace("Login");
+  // Şifre değiştirme fonksiyonu
+  const handleChangePassword = async () => {
+    // Boş alan kontrolü
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      Alert.alert("Hata", "Tüm alanları doldurun.");
       return;
     }
 
-    const user = storedUserJson ? JSON.parse(storedUserJson) : { id: Number(storedUserId) };
-    const userId = user?.id ?? user?._id ?? Number(storedUserId);
-
-    if (!userId) {
-      Alert.alert("Hata", "Kullanıcı ID bulunamadı. Lütfen tekrar giriş yapın.");
-      navigation.replace("Login");
+    // Yeni şifre ve onay şifresi eşleşiyor mu
+    if (newPassword !== confirmPassword) {
+      Alert.alert("Hata", "Yeni şifre ve onay şifresi eşleşmiyor.");
       return;
     }
 
-    // 2) isteği gönder
-    const res = await axios.put(`http://172.2.1.41:5000/api/users/changepassword/${userId}`, {
-      currentPassword,
-      newPassword
-    });
+    // Minimum uzunluk
+    if (newPassword.length < 6) {
+      Alert.alert("Hata", "Yeni şifre en az 6 karakter olmalıdır.");
+      return;
+    }
 
-    Alert.alert("Başarılı", 
-      "Şifreniz başarıyla değiştirildi." , 
-      [ { text: "Tamam", onPress: ()=> navigation.replace("Login")},] 
-     );
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-  } catch (err) {
-    console.log("Şifre değiştirme hatası detay:", err.response?.data ?? err.message ?? err);
-    // backend'den gelen hata mesajını göster
-    const serverMsg = err.response?.data?.error || err.response?.data?.message;
-    Alert.alert("Hata", serverMsg || "Şifre değiştirilemedi.");
-  }
-};
+    // Güçlü şifre kontrolü
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+    if (!passwordRegex.test(newPassword)) {
+      Alert.alert(
+        "Hata",
+        "Yeni şifre en az 1 büyük harf, 1 küçük harf ve 1 rakam içermelidir."
+      );
+      return;
+    }
+
+    try {
+      // Kullanıcı bilgilerini AsyncStorage’dan al
+      const storedUserJson = await AsyncStorage.getItem("user");
+      const storedUserId = await AsyncStorage.getItem("userId");
+
+      if (!storedUserJson && !storedUserId) {
+        Alert.alert("Hata", "Kullanıcı bilgisi bulunamadı. Lütfen tekrar giriş yapın.");
+        navigation.replace("Login");
+        return;
+      }
+
+      const user = storedUserJson ? JSON.parse(storedUserJson) : { id: Number(storedUserId) };
+      const userId = user?.id ?? user?._id ?? Number(storedUserId);
+
+      if (!userId) {
+        Alert.alert("Hata", "Kullanıcı ID bulunamadı. Lütfen tekrar giriş yapın.");
+        navigation.replace("Login");
+        return;
+      }
+
+      // Backend isteği
+      await axios.put(`http://192.168.1.36:5000/api/users/changepassword/${userId}`, {
+        currentPassword,
+        newPassword
+      });
+
+      Alert.alert(
+        "Başarılı",
+        "Şifreniz başarıyla değiştirildi.",
+        [{ text: "Tamam", onPress: () => navigation.replace("Login") }]
+      );
+
+      // State temizle
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      console.log("Şifre değiştirme hatası detay:", err.response?.data ?? err.message ?? err);
+      const serverMsg = err.response?.data?.error || err.response?.data?.message;
+      Alert.alert("Hata", serverMsg || "Şifre değiştirilemedi.");
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -106,6 +121,7 @@ const handleChangePassword = async () => {
 
 export default ChangePasswordScreen;
 
+// Styles kodları 
 const styles = StyleSheet.create({
   container: { 
    flex: 1, 

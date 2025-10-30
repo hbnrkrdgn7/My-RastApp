@@ -1,53 +1,37 @@
-/**
- * SplashScreen.js
- * 
- * Uygulama açılış ekranı
- * - 2 saniye gösterim süresi
- * - Otomatik olarak LoginScreen'e yönlendirme
- * - Modern ve şık açılış animasyonu
- */
-
 import React, { useEffect } from "react";
 import { View, Text, StyleSheet, Image, Dimensions } from "react-native";
 
-const { width, height } = Dimensions.get("window"); // Ekran boyutları
-
-/**
- * SplashScreen Component
- * 
- * @param {Object} navigation - React Navigation objesi
- */
+const { width, height } = Dimensions.get("window"); 
 const SplashScreen = ({ navigation }) => {
-  /**
-   * 2 saniye sonra LoginScreen'e yönlendir
-   */
+
   useEffect(() => {
+    // 2 saniye sonra Login ekranına geç
     const timer = setTimeout(() => {
       navigation.replace("Login");
     }, 2000);
-    return () => clearTimeout(timer); // Cleanup function
+    return () => clearTimeout(timer); // Temizlik
   }, []);
 
   return (
     <View style={styles.container}>
-      {/* ÜST SOL BLOKLAR */}
+      {/* Üst sol küçük bloklar */}
       <View style={styles.topLeft1} />
       <View style={styles.topLeft2} />
 
-      {/* ÜST SAĞ */}
+      {/* Üst sağ blok */}
       <View style={styles.topRight} />
 
-      {/* SOL ORTA */}
+      {/* Sol orta blok */}
       <View style={styles.midLeft} />
 
-      {/* ALT SOL */}
+      {/* Alt sol blok */}
       <View style={styles.bottomLeft} />
 
-      {/* ALT SAĞ BLOKLAR */}
+      {/* Alt sağ bloklar */}
       <View style={styles.bottomRight1} />
       <View style={styles.bottomRight2} />
 
-      {/* ORTA LOGO */}
+      {/* Ortadaki logo */}
       <Image
         source={require("../assets/rast-mobile-logo.png")}
         style={styles.logo}
@@ -58,6 +42,7 @@ const SplashScreen = ({ navigation }) => {
   );
 };
 
+// Styles kodları
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -73,13 +58,14 @@ const styles = StyleSheet.create({
   },
 
   subtitle: { 
-  fontSize: 28,
-  marginTop: -50,
-  color: "#b3b2b2ff",
-  fontFamily: "sans-serif",
-  letterSpacing: 1,
-},
-  // BLOKLAR
+    fontSize: 28,
+    marginTop: -50,
+    color: "#b3b2b2ff",
+    fontFamily: "sans-serif",
+    letterSpacing: 1,
+  },
+
+  // Üst sol bloklar
   topLeft1: {
     position: "absolute",
     top: 0,
@@ -99,6 +85,8 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 25,
     borderTopRightRadius: 20 
   },
+
+  // Üst sağ blok
   topRight: {
     position: "absolute",
     top: 0,
@@ -109,6 +97,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 25,
   },
 
+  // Alt sol blok
   bottomLeft: {
     position: "absolute",
     bottom: 0,
@@ -118,6 +107,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#7b2ff7",
     borderTopRightRadius: 25,
   },
+
+  // Alt sağ bloklar
   bottomRight1: {
     position: "absolute",
     bottom: height * 0.11,
@@ -127,7 +118,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#7b2ff7",
     borderTopLeftRadius: 25,
     borderBottomLeftRadius: 20
-
   },
   bottomRight2: {
     position: "absolute",

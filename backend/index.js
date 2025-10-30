@@ -1,30 +1,22 @@
-/**
- * Express.js server ana dosyası
- * - CORS ayarları
- * - API route'ları
- * - Port 5000'de çalışır
- */
-
 import express from "express";
 import cors from "cors";
-import taskRoutes from "./routes/taskRoutes.js"; // Task işlemleri
-import usersRoutes from "./routes/users.js"; // Kullanıcı işlemleri
+import taskRoutes from "./routes/taskRoutes.js"; 
+import usersRoutes from "./routes/users.js"; 
 
 const app = express();
 
-// CORS ayarları - farklı origin'lerden gelen isteklere izin ver
+// CORS ayarları: hangi frontend URL'lerinden istek kabul edilecek
 app.use(cors({
   origin: ['http://localhost:3000', 'http://192.168.0.247:3000', 'http://10.0.2.2:3000'],
   credentials: true
 }));
 
-app.use(express.json()); // JSON parse için
+// JSON body parser: gelen requestlerin JSON olarak okunabilmesi için
+app.use(express.json()); 
 
-// API route'ları
-app.use("/api/tasks", taskRoutes);
+// Route tanımlamaları
+app.use("/api/tasks", taskRoutes); 
 app.use("/api/users", usersRoutes);
 
-// Server'ı başlat
-app.listen(5000, () => console.log(" Server running on port 5000"));
-
-
+// Server başlatma
+app.listen(5000, () => console.log("Server running on port 5000"));

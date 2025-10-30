@@ -1,13 +1,3 @@
-/**
- * AddTaskModal.js
- * 
- * Yeni görev oluşturma ve mevcut görev düzenleme modal'ı
- * - Görev başlığı, açıklama, durum ve assignee seçimi
- * - Kullanıcı listesi çekme ve gösterme
- * - Yeni görev oluşturma veya mevcut görev güncelleme
- * - Form validasyonu
- */
-
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -17,31 +7,22 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from "react-native";
-import { Picker } from "@react-native-picker/picker"; // Dropdown seçim için
-import { createTask, updateTask } from "../services/api"; // API çağrıları
-import Ionicons from "react-native-vector-icons/Ionicons"; // İkonlar için
-import axios from "axios"; // HTTP istekleri için
+import { Picker } from "@react-native-picker/picker";
+import { createTask, updateTask } from "../services/api";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-/**
- * AddTaskModal Component
- * 
- * @param {Function} onClose - Modal kapatma fonksiyonu
- * @param {Function} refresh - Ana ekranı yenileme fonksiyonu
- * @param {Object} task - Düzenlenecek görev (opsiyonel)
- * @param {Function} onTaskUpdate - Görev güncelleme callback'i
- */
 const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
   // Form state'leri
-  const [title, setTitle] = useState(""); // Görev başlığı
-  const [desc, setDesc] = useState(""); // Görev açıklaması
-  const [status, setStatus] = useState(""); // Görev durumu
-  const [assignee, setAssignee] = useState(""); // Atanan kullanıcı
-  const [users, setUsers] = useState([]); // Kullanıcı listesi
-  const [loadingUsers, setLoadingUsers] = useState(true); // Yükleme durumu
+  const [title, setTitle] = useState("");
+  const [desc, setDesc] = useState("");
+  const [status, setStatus] = useState("");
+  const [assignee, setAssignee] = useState("");
+  const [users, setUsers] = useState([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
 
-  /**
-   * Düzenleme modunda görev verilerini form'a yükle
-   */
+  // Düzenleme modunda formu doldur
   useEffect(() => {
     if (task) {
       setTitle(task.title || "");
@@ -51,11 +32,11 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
     }
   }, [task]);
 
-  // 🔹 Kullanıcıları veritabanından çek
+  // Kullanıcıları çek
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get("http://192.168.0.248:5000/api/users"); // ✅ backend route: GET /api/users
+        const res = await axios.get("http://192.168.1.36:5000/api/users");
         setUsers(res.data);
       } catch (err) {
         console.error("Kullanıcılar alınamadı:", err.message);
@@ -63,38 +44,58 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
         setLoadingUsers(false);
       }
     };
-
     fetchUsers();
   }, []);
 
+  // Kaydetme / Güncelleme fonksiyonu
   const handleSave = async () => {
     try {
+      const userData = await AsyncStorage.getItem("user");
+      const currentUser = JSON.parse(userData);
+
+      if (!currentUser || !currentUser.id) {
+        return alert("Lütfen tekrar giriş yapın!");
+      }
+
+      // FRONTEND VALIDATION
+      if (!title.trim() || title.trim().length < 3) {
+        return alert("Title en az 3 karakter olmalıdır!");
+      }
+      if (!status.trim()) {
+        return alert("Status seçilmelidir!");
+      }
+      if (assignee && !users.some(u => u.id === assignee)) {
+        return alert("Geçersiz assignee seçimi!");
+      }
+
+      // Görev oluşturma veya güncelleme
       if (task) {
         const updated = await updateTask(task.id, {
           title: title.trim(),
           description: desc.trim(),
-          status: status || "Backlog",
+          status,
           assignee_id: assignee || null,
+          updated_by: Number(currentUser.id),
         });
-
         if (onTaskUpdate) onTaskUpdate(updated);
       } else {
-        const result = await createTask({
+        await createTask({
           project_id: 1,
           title: title.trim(),
           description: desc.trim(),
-          status: status || "Backlog",
+          status,
           assignee_id: assignee || null,
+          created_by: Number(currentUser.id),
         });
       }
 
       if (typeof refresh === "function") refresh();
       onClose();
+
     } catch (err) {
-      console.error(
-        "Task kaydedilemedi:",
-        err.response ? err.response.data : err.message
-      );
+      const message = err.response?.data?.message || "Görev kaydedilemedi. Lütfen tekrar deneyin.";
+      alert(message);
+      console.error("Task kaydedilemedi:", message);
     }
   };
 
@@ -103,14 +104,13 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
   return (
     <View style={styles.container}>
       <View style={styles.modalCard}>
-        {/* X Kapatma butonu */}
+        {/* 🔹 Kapat butonu */}
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
           <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
 
         <Text style={styles.header}>{task ? "Edit Task" : "New Task"}</Text>
 
-        {/* Title */}
         <TextInput
           placeholder="Title*"
           placeholderTextColor="#bbb"
@@ -119,7 +119,6 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
           onChangeText={setTitle}
         />
 
-        {/* Description */}
         <TextInput
           placeholder="Description"
           placeholderTextColor="#bbb"
@@ -129,7 +128,7 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
           onChangeText={setDesc}
         />
 
-        {/* Status Picker */}
+        {/* 🔹 Status Picker */}
         <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={status}
@@ -138,13 +137,13 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
           >
             <Picker.Item label="Status*" value="" color="#aaa" />
             <Picker.Item label="Backlog" value="Backlog" />
-            <Picker.Item label="To Do" value="To Do" />
+            <Picker.Item label="Todo" value="Todo" />
             <Picker.Item label="In Progress" value="In Progress" />
             <Picker.Item label="Done" value="Done" />
           </Picker>
         </View>
 
-        {/* Assignee Picker */}
+        {/* 🔹 Assignee Picker */}
         <View style={styles.pickerWrapper}>
           {loadingUsers ? (
             <ActivityIndicator size="small" color="#6C4EFF" />
@@ -166,7 +165,7 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
           )}
         </View>
 
-        {/* Save Button */}
+        {/* 🔹 Kaydet butonu */}
         <TouchableOpacity
           style={[styles.saveButton, isSaveDisabled && styles.disabledButton]}
           onPress={handleSave}
@@ -179,7 +178,10 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
   );
 };
 
-// ---------- STYLES ----------
+export default AddTaskModal;
+
+
+// Styles kodları 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -246,4 +248,3 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddTaskModal;

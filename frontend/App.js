@@ -6,8 +6,8 @@ import SplashScreen from "./screens/SplashScreen";
 import LoginScreen from "./screens/LoginScreen";
 import HomeScreen from "./screens/HomeScreen";
 import TaskDetail from "./screens/TaskDetail";
-import UserInfoScreen from "./screens/UserInfoScreen"; // Yeni sayfa
-import ChangePasswordScreen from "./screens/ChangePasswordScreen"; // Şifre değiştirme sayfası
+import UserInfoScreen from "./screens/UserInfoScreen"; 
+import ChangePasswordScreen from "./screens/ChangePasswordScreen";
 import MyTasksScreen from "./screens/MyTasksScreen";
 
 const Stack = createStackNavigator();

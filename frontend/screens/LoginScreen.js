@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Modal, Alert, Image, ScrollView } from "react-native";
-import { Ionicons } from "@expo/vector-icons"; // 👈 Eklendi
+import { Ionicons } from "@expo/vector-icons"; 
 import { loginUser, registerUser } from "../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const LoginScreen = ({ navigation }) => {
+  // Giriş formu state'leri
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  // Kayıt modalı ve form state'leri
   const [registerVisible, setRegisterVisible] = useState(false);
   const [regName, setRegName] = useState("");
   const [regLastName, setRegLastName] = useState("");
@@ -14,6 +17,7 @@ const LoginScreen = ({ navigation }) => {
   const [regPassword, setRegPassword] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState(null);
 
+  // Profil avatar seçenekleri
   const avatarOptions = [
     "https://cdn-icons-png.flaticon.com/512/219/219983.png",
     "https://cdn-icons-png.flaticon.com/512/219/219970.png",
@@ -25,7 +29,7 @@ const LoginScreen = ({ navigation }) => {
     "https://cdn-icons-png.flaticon.com/512/219/219974.png",
   ];
 
-  // 🔹 Ortak sıfırlama fonksiyonu
+  // Kayıt formunu temizleme ve modalı kapatma
   const resetRegisterForm = () => {
     setRegisterVisible(false);
     setRegName("");
@@ -35,81 +39,94 @@ const LoginScreen = ({ navigation }) => {
     setSelectedAvatar(null);
   };
 
-const handleLogin = async () => {
-  try {
-    const res = await loginUser({ email, password });
+  // Helper: e-posta formatı kontrolü
+  const isValidEmail = (email) => /\S+@\S+\.\S+/.test(email);
 
-    if (res?.user) {
-      await AsyncStorage.setItem("user", JSON.stringify(res.user));
-      navigation.replace("Home");
+  // Giriş işlemi
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Uyarı", "E-posta ve şifre alanları boş bırakılamaz!");
+      return;
     }
-  } catch (err) {
-    console.log("Giriş hatası:", err);
+    if (!isValidEmail(email)) {
+      Alert.alert("Uyarı", "Geçerli bir e-posta girin!");
+      return;
+    }
 
-    // Axios hatasını yakala
-    if (err.response) {
-      const status = err.response.status;
-      const message = err.response.data?.error;
+    try {
+      const res = await loginUser({ email, password });
 
-      if (status === 404 && message === "User not found") {
-        Alert.alert("Hata", "Bu e-posta adresine ait bir hesap bulunamadı!");
-      } else if (status === 401) {
-        Alert.alert("Hata", "E-posta veya şifre hatalı!");
-      } else {
-        Alert.alert("Hata", message || "Giriş işlemi başarısız oldu!");
+      if (res?.user) {
+        await AsyncStorage.setItem("user", JSON.stringify(res.user));
+        navigation.replace("Home"); 
       }
-    } else {
-      Alert.alert("Hata", "Giriş işlemi başarısız oldu!");
+    } catch (err) {
+      console.log("Giriş hatası:", err);
+
+      if (err.response) {
+        const status = err.response.status;
+        const message = err.response.data?.error;
+
+        if (status === 404 && message === "User not found") {
+          Alert.alert("Hata", "Bu e-posta adresine ait bir hesap bulunamadı!");
+        } else if (status === 401) {
+          Alert.alert("Hata", "E-posta veya şifre hatalı!");
+        } else {
+          Alert.alert("Hata", message || "Giriş işlemi başarısız oldu!");
+        }
+      } else {
+        Alert.alert("Hata", "Giriş işlemi başarısız oldu!");
+      }
     }
-  }
-};
+  };
 
+  // Kayıt işlemi
+  const handleRegister = async () => {
+    if (!regName || !regLastName || !regEmail || !regPassword) {
+      Alert.alert("Uyarı", "Tüm alanları doldurmanız gerekiyor!");
+      return;
+    }
+    if (!isValidEmail(regEmail)) {
+      Alert.alert("Uyarı", "Geçerli bir e-posta girin!");
+      return;
+    }
+    if (regPassword.length < 6) {
+      Alert.alert("Uyarı", "Şifre en az 6 karakter olmalıdır!");
+      return;
+    }
+    if (!selectedAvatar) {
+      Alert.alert("Uyarı", "Lütfen bir profil fotoğrafı seçin!");
+      return;
+    }
 
- const handleRegister = async () => {
-  if (!regName || !regLastName || !regEmail || !regPassword) {
-    Alert.alert("Uyarı", "Tüm alanları doldurmanız gerekiyor!");
-    return;
-  }
+    try {
+      const res = await registerUser({
+        name: regName,
+        surname: regLastName,
+        email: regEmail,
+        password: regPassword,
+        profile_picture: selectedAvatar,
+      });
 
-  if (regPassword.length < 6) {
-    Alert.alert("Uyarı", "Şifre en az 6 karakter olmalıdır!");
-    return;
-  }
+      if (res?.user) {
+        Alert.alert("Başarılı", "Kayıt başarılı! Giriş yapabilirsiniz.");
+        resetRegisterForm();
+      }
+    } catch (err) {
+      console.log("Kayıt hatası detay:", err.response);
+      const message = err.response?.data?.error || "Kayıt işlemi başarısız oldu!";
+      Alert.alert("Uyarı", message);
+    }
+  };
 
-  if (!selectedAvatar) {
-    Alert.alert("Uyarı", "Lütfen bir profil fotoğrafı seçin!");
-    return;
-  }
-
-  try {
-  const res = await registerUser({
-    name: regName,
-    surname: regLastName,
-    email: regEmail,
-    password: regPassword,
-    profile_picture: selectedAvatar,
-  });
-
-  if (res?.user) {
-    Alert.alert("Başarılı", "Kayıt başarılı! Giriş yapabilirsiniz.");
-    setRegisterVisible(false);
-    setRegName(""); setRegLastName(""); setRegEmail(""); setRegPassword(""); setSelectedAvatar(null);
-    return;
-  }
-} catch (err) {
-  console.log("Kayıt hatası detay:", err.response);
-  const message = err.response?.data?.error || "Kayıt işlemi başarısız oldu!";
-  Alert.alert("Uyarı", message);
-}
-
- };
- 
   return (
     <View style={styles.container}>
+      {/* Logo ve başlık */}
       <Image source={require("../assets/rast-mobile-logo.png")} style={styles.logo} resizeMode="contain" />
       <Text style={styles.title}>Welcome 👋</Text>
       <Text style={styles.subtitle}>Login to Your Account</Text>
 
+      {/* Giriş formu */}
       <TextInput
         style={styles.input}
         placeholder="E-mail"
@@ -144,6 +161,7 @@ const handleLogin = async () => {
             <Text style={styles.modalTitle}>Create an account</Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Kayıt formu inputları */}
               <TextInput style={styles.input} placeholder="Name" value={regName} onChangeText={setRegName} />
               <TextInput style={styles.input} placeholder="Surname" value={regLastName} onChangeText={setRegLastName} />
               <TextInput
@@ -180,6 +198,7 @@ const handleLogin = async () => {
                 ))}
               </View>
 
+              {/* Kayıt ve iptal butonları */}
               <TouchableOpacity style={styles.registerBtn} onPress={handleRegister}>
                 <Text style={styles.registerBtnText}>Sign up</Text>
               </TouchableOpacity>
@@ -198,7 +217,8 @@ const handleLogin = async () => {
 export default LoginScreen;
 
 
-// ---------- Styles ----------
+
+// Styles kodları
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -218,7 +238,11 @@ const styles = StyleSheet.create({
     color: "#7b2ff7",
     marginBottom: 10,
   },
-  subtitle: { fontSize: 16, color: "#555", marginBottom: 30 },
+  subtitle: { 
+    fontSize: 16, 
+    color: "#555", 
+    marginBottom: 30 
+  },
   input: {
     width: "100%",
     borderWidth: 1,
@@ -235,9 +259,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  loginText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  registerText: { marginTop: 20, color: "#333" },
-  registerLink: { color: "#7b2ff7", fontWeight: "bold" },
+  loginText: { 
+    color: "#fff", 
+    fontWeight: "bold", 
+    fontSize: 16 
+  },
+  registerText: { 
+    marginTop: 20, 
+    color: "#333"
+  },
+  registerLink: { 
+    color: "#7b2ff7", 
+    fontWeight: "bold" 
+  },
 
   modalOverlay: {
     flex: 1,
@@ -253,7 +287,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: "center",
   },
-  modalTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 20 },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: "bold", 
+    marginBottom: 20 
+  },
   
   avatarLabel: {
     fontSize: 16,
@@ -296,7 +334,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     width: "100%",
   },
-  registerBtnText: { color: "#fff", fontWeight: "bold", fontSize: 16, textAlign: "center" },
+  registerBtnText: { 
+    color: "#fff", 
+    fontWeight: "bold", 
+    fontSize: 16, 
+    textAlign: "center" },
   
   cancelButton: {
     backgroundColor: "#fff",

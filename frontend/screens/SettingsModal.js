@@ -63,6 +63,7 @@ const SettingsModal = ({ visible, onClose, navigation }) => {
 
 export default SettingsModal;
 
+// Styles kodları
 const styles = StyleSheet.create({
   modalContainer: {
    flex: 1, 

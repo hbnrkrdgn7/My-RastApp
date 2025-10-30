@@ -1,34 +1,39 @@
-/**
- * Task işlemleri controller'ı
- * - CRUD operasyonları
- * - SQL JOIN ile kullanıcı bilgileri
- */
+import prisma from "../db.js"; 
 
-import pool from "../db.js";
-
-// Proje görevlerini listele (assignee bilgileri ile)
+// Belirli bir projedeki tüm görevleri getir
 export const getTasks = async (req, res) => {
   try {
     const { projectId } = req.params;
 
-    // Task'ları kullanıcı bilgileri ile birlikte getir
-    const result = await pool.query(
-      `SELECT 
-         t.*, 
-         CONCAT(u1.name, ' ', COALESCE(u1.surname, '')) AS created_by_name,
-         CONCAT(u2.name, ' ', COALESCE(u2.surname, '')) AS updated_by_name,
-         CONCAT(u3.name, ' ', COALESCE(u3.surname, '')) AS assigned_to_name,
-         u3.profile_picture AS assigned_to_avatar
-       FROM tasks t
-       LEFT JOIN users u1 ON t.created_by = u1.id
-       LEFT JOIN users u2 ON t.updated_by = u2.id
-       LEFT JOIN users u3 ON t.assignee_id = u3.id
-       WHERE t.project_id = $1
-       ORDER BY t.created_at DESC`,
-      [projectId]
-    );
+    // Görevleri çek ve ilişkili kullanıcı bilgilerini al
+    const tasks = await prisma.tasks.findMany({
+      where: { project_id: parseInt(projectId) },
+      orderBy: { created_at: "desc" },
+      include: {
+        users_tasks_created_byTousers: { select: { name: true, surname: true } },
+        users_tasks_updated_byTousers: { select: { name: true, surname: true } },
+        users_tasks_assignee_idTousers: { select: { name: true, surname: true, profile_picture: true } },
+      },
+    });
 
-    res.json(result.rows);
+        // Kullanıcı isimlerini kolay okunur şekilde ekle
+    const formattedTasks = tasks.map((t) => ({
+      ...t,
+      created_by_name: t.users_tasks_created_byTousers
+        ? `${t.users_tasks_created_byTousers.name} ${t.users_tasks_created_byTousers.surname || ""}`
+        : null,
+      updated_by_name: t.users_tasks_updated_byTousers
+        ? `${t.users_tasks_updated_byTousers.name} ${t.users_tasks_updated_byTousers.surname || ""}`
+        : null,
+      assigned_to_name: t.users_tasks_assignee_idTousers
+        ? `${t.users_tasks_assignee_idTousers.name} ${t.users_tasks_assignee_idTousers.surname || ""}`
+        : null,
+      assigned_to_avatar: t.users_tasks_assignee_idTousers
+        ? t.users_tasks_assignee_idTousers.profile_picture
+        : null,
+    }));
+
+    res.json(formattedTasks);
   } catch (err) {
     console.error("Görevler alınamadı:", err);
     res.status(500).json({ error: err.message });
@@ -39,72 +44,125 @@ export const getTasks = async (req, res) => {
 export const createTask = async (req, res) => {
   try {
     const { project_id, title, description, status, assignee_id, created_by } = req.body;
-    const result = await pool.query(
-      `INSERT INTO tasks (project_id, title, description, status, assignee_id, created_by, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, NOW())
-       RETURNING *`,
-      [project_id, title, description, status, assignee_id, created_by]
-    );
-    res.json(result.rows[0]);
+
+    // Basit doğrulamalar
+    if (!project_id || isNaN(project_id)) 
+      return res.status(400).json({ message: "Projeyi belirleyemedik. Lütfen tekrar deneyin." });
+      
+    if (!title || title.length < 3) 
+      return res.status(400).json({ message: "Görev başlığı en az 3 karakter olmalıdır." });
+    
+    const validStatus = ["Todo", "In Progress", "Backlog", "Done"];
+    if (!status || !validStatus.includes(status)) 
+      return res.status(400).json({ message: "Görev durumu geçersiz. Lütfen bir durum seçin." });
+    
+    if (!created_by || isNaN(created_by)) 
+      return res.status(400).json({ message: "Bu görevi kimin oluşturduğunu belirleyemedik. Lütfen tekrar giriş yapın." });
+    
+    if (assignee_id && isNaN(assignee_id)) 
+      return res.status(400).json({ message: "Görevi atayacağımız kullanıcı bilgisi geçersiz." });
+
+    // Görevi oluştur
+    const task = await prisma.tasks.create({
+      data: {
+        project_id,
+        title,
+        description,
+        status,
+        assignee_id,
+        created_by,
+      },
+      include: {
+        users_tasks_assignee_idTousers: { select: { name: true, surname: true, profile_picture: true } },
+      },
+    });
+
+    // Görevi frontend için hazırla
+    const result = {
+      ...task,
+      assigned_to_name: task.users_tasks_assignee_idTousers
+        ? `${task.users_tasks_assignee_idTousers.name} ${task.users_tasks_assignee_idTousers.surname || ""}`
+        : null,
+      assigned_to_avatar: task.users_tasks_assignee_idTousers
+        ? task.users_tasks_assignee_idTousers.profile_picture
+        : null,
+    };
+
+    res.json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Task oluşturma hatası:", err);
+    res.status(500).json({ message: "Görev oluşturulamadı. Lütfen tekrar deneyin." });
   }
 };
 
-// GÖREV GÜNCELLEME
+// Mevcut görevi güncelle
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, status, assignee_id, updated_by } = req.body;
+    
+    // Basit doğrulamalar
+    if (!title || title.length < 3) 
+      return res.status(400).json({ message: "Görev başlığı en az 3 karakter olmalıdır." });
 
-    // 1️⃣ Task'i güncelle
-    const updateResult = await pool.query(
-      `UPDATE tasks
-       SET title = $1,
-           description = $2,
-           status = $3,
-           assignee_id = $4,
-           updated_by = $5,
-           updated_at = NOW()
-       WHERE id = $6
-       RETURNING *`,
-      [title, description, status, assignee_id, updated_by, id]
-    );
+    const validStatus = ["Todo", "In Progress", "Backlog", "Done"];
+    if (!status || !validStatus.includes(status)) 
+      return res.status(400).json({ message: "Görev durumu geçersiz. Lütfen bir durum seçin." });
 
-    if (updateResult.rows.length === 0)
-      return res.status(404).json({ error: "Task not found" });
+    if (updated_by && isNaN(updated_by)) 
+      return res.status(400).json({ message: "Görevi güncelleyecek kullanıcı bilgisi geçersiz." });
 
-    // 2️⃣ Güncel task'i assignee bilgisi ile al
-    const result = await pool.query(
-      `SELECT t.*,
-              CONCAT(u.name, ' ', COALESCE(u.surname, '')) AS assigned_to_name,
-              u.profile_picture AS assigned_to_avatar
-       FROM tasks t
-       LEFT JOIN users u ON t.assignee_id = u.id
-       WHERE t.id = $1`,
-      [id]
-    );
+    if (assignee_id && isNaN(assignee_id)) 
+      return res.status(400).json({ message: "Görevi atayacağımız kullanıcı bilgisi geçersiz." });
 
-    res.json(result.rows[0]); // frontend artık assigned_to_name ve avatar alacak
+    // Güncelle ve ilişkili kullanıcı bilgilerini al
+    const updatedTask = await prisma.tasks.update({
+      where: { id: parseInt(id) },
+      data: {
+        title,
+        description,
+        status,
+        assignee_id,
+        updated_by,
+        updated_at: new Date(),
+      },
+      include: {
+        users_tasks_assignee_idTousers: {
+          select: { name: true, surname: true, profile_picture: true },
+        },
+      },
+    });
+
+    // Frontend için düzenle
+    const result = {
+      ...updatedTask,
+      assigned_to_name: updatedTask.users_tasks_assignee_idTousers
+        ? `${updatedTask.users_tasks_assignee_idTousers.name} ${updatedTask.users_tasks_assignee_idTousers.surname || ""}`
+        : null,
+      assigned_to_avatar: updatedTask.users_tasks_assignee_idTousers
+        ? updatedTask.users_tasks_assignee_idTousers.profile_picture
+        : null,
+    };
+
+    res.json(result);
   } catch (err) {
     console.error("Task güncelleme hatası:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Görev güncellenemedi. Lütfen tekrar deneyin." });
   }
 };
 
-
-// GÖREV SİLME
+// Görevi sil
 export const deleteTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query("DELETE FROM tasks WHERE id = $1 RETURNING *", [id]);
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Task not found" });
-    }
+    const deletedTask = await prisma.tasks.delete({
+      where: { id: parseInt(id) },
+    });
 
-    res.json({ message: "Task deleted successfully", deleted: result.rows[0] });
+    res.json({ message: "Task deleted successfully", deleted: deletedTask });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+

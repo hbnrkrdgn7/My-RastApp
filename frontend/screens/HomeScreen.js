@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
@@ -11,6 +10,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import SettingsModal from "./SettingsModal";
 
 const HomeScreen = ({ navigation }) => {
+  // State'ler
   const [tasks, setTasks] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -18,8 +18,9 @@ const HomeScreen = ({ navigation }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   
-  const projectId = 1;
+  const projectId = 1; // Örnek proje ID
 
+  // Görevleri fetch et
   const fetchTasks = async () => {
     try {
       const res = await getTasks(projectId);
@@ -27,203 +28,167 @@ const HomeScreen = ({ navigation }) => {
     } catch (err) { console.error(err); }
   };
 
+  // Yeni veya güncellenmiş task ekleme
   const handleTaskUpdate = (newOrUpdatedTask) => {
     setTasks(prev => [newOrUpdatedTask, ...prev.filter(t => t.id !== newOrUpdatedTask.id)]);
   };
 
+  // Status bazlı filtreleme ve arama
   const groupedTasks = (status) => {
     return searchText
       ? tasks.filter(t => t.status === status && t.title.toLowerCase().includes(searchText.toLowerCase()))
       : tasks.filter(t => t.status === status);
   };
 
+  // Task render fonksiyonu
   const renderTask = ({ item }) => {
-  const statusStyle = item.status === "Done" ? styles.statusDone :
-                      item.status === "In Progress" ? styles.statusProgress :
-                      item.status === "Backlog" ? styles.statusBacklog :
-                      styles.statusTodo;
+    const statusStyle = item.status === "Done" ? styles.statusDone :
+                        item.status === "In Progress" ? styles.statusProgress :
+                        item.status === "Backlog" ? styles.statusBacklog :
+                        styles.statusTodo;
 
-  return (
-    <TouchableOpacity style={styles.taskCard} onPress={() => setSelectedTask(item)}>
-      <Text style={styles.taskTitle}>{item.title}</Text>
-      <Text style={styles.taskDescription} numberOfLines={3}>{item.description || "No description available."}</Text>
+    return (
+      <TouchableOpacity style={styles.taskCard} onPress={() => setSelectedTask(item)}>
+        <Text style={styles.taskTitle}>{item.title}</Text>
+        <Text style={styles.taskDescription} numberOfLines={3}>{item.description || "No description available."}</Text>
 
-      {/* Task Footer */}
-      <View style={styles.taskFooter}>
-  {/* Assignee */}
-  <View style={styles.assigneeTag}>
-    {item.assigned_to_avatar ? 
-      <Image source={{ uri: item.assigned_to_avatar }} style={styles.assigneeAvatar} /> 
-      : <View style={styles.assigneeIcon}><Text style={styles.assigneeIconText}>👤</Text></View>}
-    <Text style={styles.assigneeText} numberOfLines={1}>{item.assigned_to_name || "Unassigned"}</Text>
-  </View>
+        {/* Task Footer */}
+        <View style={styles.taskFooter}>
+          {/* Assignee */}
+          <View style={styles.assigneeTag}>
+            {item.assigned_to_avatar ? 
+              <Image source={{ uri: item.assigned_to_avatar }} style={styles.assigneeAvatar} /> 
+              : <View style={styles.assigneeIcon}><Text style={styles.assigneeIconText}>👤</Text></View>}
+            <Text style={styles.assigneeText} numberOfLines={1}>{item.assigned_to_name || "Unassigned"}</Text>
+          </View>
 
-  {/* Date ve Status */}
-  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-    <Text style={styles.taskDate}>
-      📅 {new Date(item.created_at).toLocaleDateString("tr-TR", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      })}
-    </Text>
-    <Text style={[styles.statusBadge, statusStyle]}>{item.status}</Text>
-  </View>
-</View>
+          {/* Date ve Status */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={styles.taskDate}>
+              📅 {new Date(item.created_at).toLocaleDateString("tr-TR", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              })}
+            </Text>
+            <Text style={[styles.statusBadge, statusStyle]}>{item.status}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
-    </TouchableOpacity>
-  );
-};
+  useEffect(() => {
+    fetchTasks();
 
+    const unsubscribe = navigation.addListener('focus', () => {
+      // AsyncStorage’dan kullanıcı bilgilerini yükle
+      const loadUser = async () => {
+        const user = JSON.parse(await AsyncStorage.getItem("user"));
+        if (user) {
+          setUserName(user.name);
+          setUserAvatar(user.avatar);
+        }
+      };
+      loadUser();
 
-useEffect(() => {
-
-  fetchTasks();
-  const unsubscribe = navigation.addListener('focus', () => {
-    // AsyncStorage’dan kullanıcı bilgilerini yükle
-    const loadUser = async () => {
-      const user = JSON.parse(await AsyncStorage.getItem("user"));
-      if (user) {
-        setUserName(user.name);
-        setUserAvatar(user.avatar);
+      // Profil güncellemesi geldi mi?
+      const updatedUser = navigation.getState()?.routes?.find(r => r.name === "Home")?.params?.updatedUser;
+      if (updatedUser) {
+        setUserName(updatedUser.name);
+        setUserAvatar(updatedUser.avatar);
       }
-    };
-    loadUser();
 
-    // Profil güncellemesi geldi mi?
-    const updatedUser = navigation.getState()?.routes?.find(r => r.name === "Home")?.params?.updatedUser;
-    if (updatedUser) {
-      setUserName(updatedUser.name);
-      setUserAvatar(updatedUser.avatar);
-    }
+      // Task güncellemeleri varsa fetch et
+      if (navigation.getState()?.routes?.some(r => r.params?.updatedTaskId)) {
+        fetchTasks();
+      }
+    });
 
-    // Task güncellemeleri varsa fetch et
-    if (navigation.getState()?.routes?.some(r => r.params?.updatedTaskId)) {
-      fetchTasks();
-    }
-  });
+    return unsubscribe;
+  }, [navigation]);
 
-  return unsubscribe;
-}, [navigation]);
-
-
-
-
+  // Logo tıklanınca açılacak link
   const handleLogoPress = () => { Linking.openURL("https://www.rastmobile.com/tr"); };
 
   return (
-  <View style={styles.container}>
-    {/* 🔹 Üst Bar */}
-    <View style={styles.headerContainer}>
-      <View style={styles.headerLeft}>
-        <TouchableOpacity onPress={handleLogoPress}>
-          <Image
-            source={require("../assets/rast-mobile-logo1.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </TouchableOpacity>
-      </View>
-
-      {showSearch ? (
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search..."
-          value={searchText}
-          onChangeText={setSearchText}
-          onSubmitEditing={() => setShowSearch(false)}
-          autoFocus
-          placeholderTextColor="#ccc"
-        />
-      ) : (
-        <View style={styles.headerIcons}>
-          <TouchableOpacity onPress={() => setShowSearch(prev => !prev)}>
-            <Ionicons name="search-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setShowSettingsModal(true)}>
-            <Ionicons name="settings-outline" size={24} color="#fff" />
+    <View style={styles.container}>
+      {/* 🔹 Üst Bar */}
+      <View style={styles.headerContainer}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={handleLogoPress}>
+            <Image
+              source={require("../assets/rast-mobile-logo1.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </TouchableOpacity>
         </View>
-      )}
-    </View>
 
-    {/* 🔹 Proje Başlığı Bölümü */}
-    <View style={styles.projectHeader}>
-  <View style={styles.projectHeaderLeft}>
-    <View style={styles.projectIcon}>
-      <Ionicons name="code-slash" size={20} color="#7B2FF7" />
-    </View>
-    <View>
-      <Text style={styles.projectMainTitle}>Refactoring for Word Ninja</Text>
-      <Text style={styles.projectSubTitle}>New project for refactoring our app Word Ninja</Text>
-    </View>
-  </View>
-</View>
+        {showSearch ? (
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search..."
+            value={searchText}
+            onChangeText={setSearchText}
+            onSubmitEditing={() => setShowSearch(false)}
+            autoFocus
+            placeholderTextColor="#ccc"
+          />
+        ) : (
+          <View style={styles.headerIcons}>
+            <TouchableOpacity onPress={() => setShowSearch(prev => !prev)}>
+              <Ionicons name="search-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowSettingsModal(true)}>
+              <Ionicons name="settings-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
 
+      {/* 🔹 Proje Başlığı Bölümü */}
+      <View style={styles.projectHeader}>
+        <View style={styles.projectHeaderLeft}>
+          <View style={styles.projectIcon}>
+            <Ionicons name="code-slash" size={20} color="#7B2FF7" />
+          </View>
+          <View>
+            <Text style={styles.projectMainTitle}>Refactoring for Word Ninja</Text>
+            <Text style={styles.projectSubTitle}>New project for refactoring our app Word Ninja</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Task listeleri */}
       <ScrollView
-  showsVerticalScrollIndicator={false}
-  contentContainerStyle={{ paddingBottom: 150 }}
->
-  {/* Project sections */}
-<View style={styles.sectionRow}>
-  <Text style={styles.section}>Backlog</Text>
-  <Text style={styles.sectionCount}>{groupedTasks("Backlog").length}</Text>
-</View>
-<FlatList
-  data={groupedTasks("Backlog")}
-  horizontal
-  showsHorizontalScrollIndicator={false}
-  contentContainerStyle={styles.flatListContent}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={renderTask}
-/>
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 150 }}
+      >
+        {["Backlog", "To Do", "In Progress", "Done"].map(status => (
+          <View key={status}>
+            <View style={styles.sectionRow}>
+              <Text style={styles.section}>{status}</Text>
+              <Text style={styles.sectionCount}>{groupedTasks(status).length}</Text>
+            </View>
+            <FlatList
+              data={groupedTasks(status)}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.flatListContent}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderTask}
+            />
+          </View>
+        ))}
+      </ScrollView>
 
-<View style={styles.sectionRow}>
-  <Text style={styles.section}>To Do</Text>
-  <Text style={styles.sectionCount}>{groupedTasks("To Do").length}</Text>
-</View>
-<FlatList
-  data={groupedTasks("To Do")}
-  horizontal
-  showsHorizontalScrollIndicator={false}
-  contentContainerStyle={styles.flatListContent}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={renderTask}
-/>
-
-<View style={styles.sectionRow}>
-  <Text style={styles.section}>In Progress</Text>
-  <Text style={styles.sectionCount}>{groupedTasks("In Progress").length}</Text>
-</View>
-<FlatList
-  data={groupedTasks("In Progress")}
-  horizontal
-  showsHorizontalScrollIndicator={false}
-  contentContainerStyle={styles.flatListContent}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={renderTask}
-/>
-
-<View style={styles.sectionRow}>
-  <Text style={styles.section}>Done</Text>
-  <Text style={styles.sectionCount}>{groupedTasks("Done").length}</Text>
-</View>
-<FlatList
-  data={groupedTasks("Done")}
-  horizontal
-  showsHorizontalScrollIndicator={false}
-  contentContainerStyle={styles.flatListContent}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={renderTask}
-/>
-
-</ScrollView>
-
-
+      {/* 🔹 Görev ekleme butonu */}
       <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
         <Ionicons name="add" size={36} color="#fff" />
       </TouchableOpacity>
 
+      {/* 🔹 Modallar */}
       <Modal visible={showModal} animationType="slide" transparent onRequestClose={() => setShowModal(false)}>
         <AddTaskModal onClose={() => setShowModal(false)} refresh={fetchTasks} onTaskAdded={handleTaskUpdate} />
       </Modal>
@@ -232,38 +197,37 @@ useEffect(() => {
         <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} refresh={fetchTasks} />
       </Modal>
 
-      {/* Yeni modallar */}
+      {/* 🔹 Ayarlar Modalı */}
       <SettingsModal
-  visible={showSettingsModal}
-  onClose={() => setShowSettingsModal(false)}
-  onShowUserInfo={() => {
-    setShowSettingsModal(false);
-    navigation.navigate("UserInfo"); // artık modal değil, yeni sayfa
-  }}
-  onShowChangePassword={() => {
-    setShowSettingsModal(false);
-    navigation.navigate("ChangePassword"); // yeni sayfa
-  }}
-  navigation={navigation}
-/>
-{/* Alt Bar (Bottom Navigation) */}
-<View style={styles.bottomBar}>
-  <TouchableOpacity onPress={() => navigation.navigate("Home")}>
-    <Ionicons name="home-outline" size={26} color="#7b2ff7" />
-  </TouchableOpacity>
+        visible={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onShowUserInfo={() => {
+          setShowSettingsModal(false);
+          navigation.navigate("UserInfo");
+        }}
+        onShowChangePassword={() => {
+          setShowSettingsModal(false);
+          navigation.navigate("ChangePassword");
+        }}
+        navigation={navigation}
+      />
 
-  <TouchableOpacity onPress={() => Linking.openURL("https://wordninja.ai")} style={styles.bottomLink}>
-    <Text style={styles.bottomLinkText}>Go to Word Ninja</Text>
-  </TouchableOpacity>
-</View>
-
+      {/* 🔹 Alt Bar */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
+          <Ionicons name="home-outline" size={26} color="#7b2ff7" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL("https://wordninja.ai")} style={styles.bottomLink}>
+          <Text style={styles.bottomLinkText}>Go to Word Ninja</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 export default HomeScreen;
 
-// ---------- STYLES ----------
+// Stles kodları
 const styles = StyleSheet.create({
   container: { 
    flex: 1, 
@@ -317,7 +281,7 @@ const styles = StyleSheet.create({
   padding: 12, 
   borderRadius: 12, 
   width: 250, 
-  height: 180, // sabit yükseklik
+  height: 180,
   shadowColor: "#000", 
   shadowOffset: { width: 0, height: 2 }, 
   shadowOpacity: 0.2, 
@@ -367,7 +331,7 @@ const styles = StyleSheet.create({
   borderTopWidth: 0.5,
   borderTopColor: "#eee",
   paddingTop: 8,
-  flexDirection: "column", // vertical layout
+  flexDirection: "column", 
   justifyContent: "flex-end",
   gap: 4
 },
@@ -399,7 +363,7 @@ const styles = StyleSheet.create({
 },
   addButton: { 
    position: "absolute",
-   bottom: 95, // alt barın biraz üstünde kalsın
+   bottom: 95, 
    right: 25,
    backgroundColor: "#7b2ff7",
    borderRadius: 30,
@@ -496,5 +460,4 @@ projectSubTitle: {
   color: "#6F6F6F",
   marginTop: 2,
 },
-
 });

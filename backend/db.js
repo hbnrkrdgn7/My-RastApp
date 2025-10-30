@@ -1,17 +1,6 @@
-/**
- * PostgreSQL veritabanı bağlantı konfigürasyonu
- */
+import { PrismaClient } from "./generated/index.js"; 
 
-import pkg from "pg";
-const { Pool } = pkg;
+// Prisma Client instance oluşturuluyor, bunu DB işlemleri için kullanacağız
+const prisma = new PrismaClient();
 
-// PostgreSQL bağlantı havuzu
-const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "RastApp",
-  password: "Sistem_4455",
-  port: 5432
-});
-
-export default pool;
+export default prisma;

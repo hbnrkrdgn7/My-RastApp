@@ -6,7 +6,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import TaskDetail from "./TaskDetail"; 
 
-// Alt bar
+// Alt bar component'i
 const BottomBar = ({ navigation }) => (
   <View style={styles.bottomBar}>
     <TouchableOpacity onPress={() => navigation.navigate("Home")}>
@@ -25,30 +25,31 @@ const MyTasksScreen = ({ navigation }) => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const [page, setPage] = useState(1);       // sayfa numarası
-  const [limit] = useState(10);             // sayfa başına görev sayısı
+  const [page, setPage] = useState(1);      
+  const [limit] = useState(10);           
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true); // sonraki sayfa var mı
+  const [hasMore, setHasMore] = useState(true); 
 
+  // Component açıldığında kullanıcı id ve görevleri çek
   useEffect(() => {
     const fetchUserIdAndTasks = async () => {
       const user = await AsyncStorage.getItem("user");
       if (user) {
         const parsed = JSON.parse(user);
         setUserId(parsed.id);
-        fetchTasks(parsed.id, 1);  // ilk sayfa
+        fetchTasks(parsed.id, 1);  // ilk sayfa görevleri al
       }
     };
     fetchUserIdAndTasks();
   }, []);
 
+  // Görevleri backend'den çek ve sayfalama yap
   const fetchTasks = async (id, nextPage = 1) => {
     if (loading) return;
     setLoading(true);
 
     try {
-      // Backend endpoint'i değişmeyecek, biz tüm taskları alıyoruz ve slice ile sayfalıyoruz
-      const res = await axios.get(`http://172.2.1.41:5000/api/tasks/user/${id}`);
+      const res = await axios.get(`http://192.168.1.36:5000/api/tasks/user/${id}`);
       const allTasks = res.data || [];
 
       const startIndex = (nextPage - 1) * limit;
@@ -75,26 +76,45 @@ const MyTasksScreen = ({ navigation }) => {
     if (hasMore) fetchTasks(userId, page + 1);
   };
 
-  // renderTask ve modal mantığı değişmeyecek
-
-
+  // Her görev için render fonksiyonu
   const renderTask = ({ item }) => {
+    // durum stilini belirle
     const statusStyle =
       item.status === "Done" ? styles.statusDone :
       item.status === "In Progress" ? styles.statusProgress :
       item.status === "Backlog" ? styles.statusBacklog :
       styles.statusTodo;
- const taskWithAssignee = {
-    ...item,
-    assigned_to_name: item.assigned_to_name || (item.assigned_to?.name ?? "Unassigned"),
-    assigned_to_avatar: item.assigned_to_avatar || (item.assigned_to?.avatar ?? null),
-  };
+
+    // Atanmış kullanıcı bilgilerini al
+    const taskWithAssignee = {
+      ...item,
+      assigned_to_name:
+        item.assigned_to_name ||
+        (item.users_tasks_assignee_idTousers
+          ? `${item.users_tasks_assignee_idTousers.name} ${item.users_tasks_assignee_idTousers.surname}`
+          : "Unassigned"),
+      assigned_to_avatar:
+        item.assigned_to_avatar ||
+        item.users_tasks_assignee_idTousers?.profile_picture ||
+        null,
+    };
+
     return (
       <TouchableOpacity
         style={styles.taskCard}
         onPress={() => {
-          setSelectedTask(taskWithAssignee);   // seçilen task
-          setModalVisible(true);   // modal aç
+          const fixedTask = {
+            ...item,
+            assigned_to_name:
+              item.users_tasks_assignee_idTousers
+                ? `${item.users_tasks_assignee_idTousers.name} ${item.users_tasks_assignee_idTousers.surname}`
+                : "Unassigned",
+            assigned_to_avatar:
+              item.users_tasks_assignee_idTousers?.profile_picture || null,
+          };
+
+          setSelectedTask(fixedTask); 
+          setModalVisible(true);    
         }}
       >
         <Text style={styles.taskTitle}>{item.title}</Text>
@@ -113,6 +133,7 @@ const MyTasksScreen = ({ navigation }) => {
           </View>
         )}
 
+        {/* tarih ve durum */}
         <View style={styles.taskFooter}>
           <Text style={styles.taskDate}>
             📅 {new Date(item.created_at).toLocaleDateString("tr-TR")}
@@ -125,34 +146,39 @@ const MyTasksScreen = ({ navigation }) => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 10 }]}>
-      <Text style={styles.header}>My Tasks</Text>
+      {/* Başlık ve görev sayısı */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>My Tasks</Text>
+        <Text style={styles.taskCount}>{tasks.length}</Text>
+      </View>
 
+      {/* Görev listesi */}
       <FlatList
-  data={tasks}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={renderTask}
-  contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 100 }}
-  ListFooterComponent={
-    hasMore ? (
-      <TouchableOpacity
-        style={{
-          margin: 15,
-          padding: 12,
-          backgroundColor: "#7b2ff7",
-          borderRadius: 10,
-          alignItems: "center"
-        }}
-        onPress={() => fetchTasks(userId, page + 1)}
-      >
-        <Text style={{ color: "#fff", fontWeight: "700" }}>
-          {loading ? "Yükleniyor..." : "Daha Fazla Göster"}
-        </Text>
-      </TouchableOpacity>
-    ) : null
-  }
-/>
+        data={tasks}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderTask}
+        contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 100 }}
+        ListFooterComponent={
+          hasMore ? (
+            <TouchableOpacity
+              style={{
+                margin: 15,
+                padding: 12,
+                backgroundColor: "#7b2ff7",
+                borderRadius: 10,
+                alignItems: "center"
+              }}
+              onPress={() => fetchTasks(userId, page + 1)}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700" }}>
+                {loading ? "Yükleniyor..." : "Daha Fazla Göster"}
+              </Text>
+            </TouchableOpacity>
+          ) : null
+        }
+      />
 
-      {/* TaskDetail Modal */}
+      {/* Görev detay modalı */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -160,20 +186,15 @@ const MyTasksScreen = ({ navigation }) => {
         onRequestClose={() => setModalVisible(false)}
       >
         {selectedTask && (
-          // MyTasksScreen.js
-<TaskDetail
-  task={selectedTask}
-  onClose={() => setModalVisible(false)}
- refresh={() => {
-    fetchTasks(userId); // sadece MyTasks ekranını yenile
-}}
-
-
-/>
-
+          <TaskDetail
+            task={selectedTask}
+            onClose={() => setModalVisible(false)}
+            refresh={() => { fetchTasks(userId); }} 
+          />
         )}
       </Modal>
 
+      {/* Alt bar */}
       <BottomBar navigation={navigation} />
     </View>
   );
@@ -181,7 +202,7 @@ const MyTasksScreen = ({ navigation }) => {
 
 export default MyTasksScreen;
 
-// ---------- STYLES ----------
+// Styles kodları
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9F9FB" },
   header: { fontSize: 22, fontWeight: "700", margin: 15 },
@@ -196,20 +217,70 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3
   },
-  taskTitle: { fontWeight: "700", fontSize: 16 },
-  taskDescription: { fontSize: 14, color: "#333", marginTop: 5 },
-  assigneeTag: { flexDirection: "row", alignItems: "center", marginTop: 8 },
-  assigneeAvatar: { width: 30, height: 30, borderRadius: 15 },
-  assigneeIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: "#eee", justifyContent: "center", alignItems: "center" },
-  assigneeIconText: { fontSize: 16 },
-  assigneeText: { marginLeft: 6, fontSize: 14, maxWidth: 150 },
-  taskFooter: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
-  taskDate: { fontSize: 12, color: "#888" },
-  statusBadge: { fontSize: 12, fontWeight: "700", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8, color: "#fff" },
-  statusDone: { backgroundColor: "#4BB543" },
-  statusProgress: { backgroundColor: "#FFA500" },
-  statusBacklog: { backgroundColor: "#FF6347" },
-  statusTodo: { backgroundColor: "#7b2ff7" },
+  taskTitle: { 
+    fontWeight: "700", 
+    fontSize: 16 
+  },
+  taskDescription: { 
+    fontSize: 14, 
+    color: "#333", 
+    marginTop: 5 
+  },
+  assigneeTag: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    marginTop: 8 
+  },
+  assigneeAvatar: { 
+    width: 30, 
+    height: 30, 
+    borderRadius: 15 
+  },
+  assigneeIcon: { 
+    width: 30, 
+    height: 30, 
+    borderRadius: 15, 
+    backgroundColor: "#eee", 
+    justifyContent: "center", 
+    alignItems: "center" 
+  },
+  assigneeIconText: { 
+    fontSize: 16 
+  },
+  assigneeText: { 
+    marginLeft: 6,
+    fontSize: 14, 
+    maxWidth: 150 
+  },
+  taskFooter: { 
+    flexDirection: "row",
+    justifyContent: "space-between", 
+    marginTop: 8 
+  },
+  taskDate: { 
+    fontSize: 12, 
+    color: "#888" 
+  },
+  statusBadge: { 
+    fontSize: 12, 
+    fontWeight: "700", 
+    paddingHorizontal: 6, 
+    paddingVertical: 2, 
+    borderRadius: 8, 
+    color: "#fff" 
+  },
+  statusDone: { 
+    backgroundColor: "#4BB543" 
+  },
+  statusProgress: { 
+    backgroundColor: "#FFA500" 
+  },
+  statusBacklog: { 
+    backgroundColor: "#FF6347" 
+  },
+  statusTodo: { 
+    backgroundColor: "#7b2ff7" 
+  },
   bottomBar: {
     position: "absolute",
     bottom: 0,
@@ -230,4 +301,18 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   bottomLinkText: { color: "#7b2ff7", fontWeight: "600", fontSize: 15 },
+  headerContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  margin: 15,
+  marginBottom: 5,
+},
+taskCount: {
+  marginLeft: 8,
+  fontSize: 18,
+  color: "#999", 
+  fontWeight: "600",
+},
+
 });
