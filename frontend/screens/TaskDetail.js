@@ -4,7 +4,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import AddTaskModal from "./AddTaskModal";
 import { deleteTask } from "../services/api";
 
-const TaskDetail = ({ task, onClose, refresh }) => {
+const TaskDetail = ({ task, onClose, refresh, onTaskUpdate }) => {
   const [editModalVisible, setEditModalVisible] = useState(false); 
   const [currentTask, setCurrentTask] = useState(null); 
 
@@ -24,8 +24,8 @@ const TaskDetail = ({ task, onClose, refresh }) => {
         style: "destructive",
         onPress: async () => {
           try {
-            await deleteTask(currentTask.id); // API ile sil
-            if (typeof refresh === "function") refresh(); // Listeyi yenile
+            await deleteTask(currentTask.id);
+            if (typeof refresh === "function") refresh();
             onClose();
           } catch (err) {
             console.error("Task silinemedi:", err.response ? err.response.data : err.message);
@@ -36,11 +36,14 @@ const TaskDetail = ({ task, onClose, refresh }) => {
   };
 
   // Düzenleme sonrası güncel task'i ata
-  const handleTaskUpdated = (updatedTask) => {
-    setCurrentTask(updatedTask);
-    if (typeof refresh === "function") refresh();
-    setEditModalVisible(false); 
-  };
+const handleTaskUpdated = (updatedTask) => {
+  setCurrentTask(prev => ({ ...prev, ...updatedTask,
+    created_by_name: prev.created_by_name || updatedTask.created_by_name,
+    updated_by_name: updatedTask.updated_by_name || prev.updated_by_name,
+   }));
+  if (typeof onTaskUpdate === "function") onTaskUpdate(updatedTask);  
+  setEditModalVisible(false);
+};
 
   return (
     <View style={styles.overlay}>
@@ -155,6 +158,22 @@ const TaskDetail = ({ task, onClose, refresh }) => {
             </Text>
           </View>
 
+          {/* Görevi oluşturan */}
+          {currentTask.created_by_name && (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Created By:</Text>
+              <Text style={styles.value}>{currentTask.created_by_name}</Text>
+            </View>
+          )}
+
+          {/* Son güncelleyen */}
+          {currentTask.updated_by_name && (
+            <View style={styles.infoRow}>
+              <Text style={styles.label}>Last Updated By:</Text>
+              <Text style={styles.value}>{currentTask.updated_by_name}</Text>
+            </View>
+          )}
+
         </ScrollView>
 
         {/* FOOTER */}
@@ -177,16 +196,14 @@ const TaskDetail = ({ task, onClose, refresh }) => {
           onClose={() => setEditModalVisible(false)}
           refresh={refresh}
           task={currentTask}
-          onTaskUpdate={(updated) => {
-            setCurrentTask(updated);  
-            if (typeof refresh === "function") refresh();
-            setEditModalVisible(false);
-          }}
+          onTaskUpdate={handleTaskUpdated}
         />
       </Modal>
     </View>
   );
 };
+
+export default TaskDetail;
 
 // Styles kodları
 const styles = StyleSheet.create({
@@ -342,6 +359,19 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
     fontWeight: "600",
   },
+  infoRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  marginBottom: 10,
+},
+label: {
+  fontWeight: "600",
+  color: "#555",
+},
+value: {
+  color: "#111",
+  fontWeight: "500",
+},
+
 });
 
-export default TaskDetail;

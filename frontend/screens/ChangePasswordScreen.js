@@ -2,12 +2,16 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import { Ionicons } from "@expo/vector-icons";
 
 const ChangePasswordScreen = ({ navigation }) => {
   // State'ler
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Şifre değiştirme fonksiyonu
   const handleChangePassword = async () => {
@@ -60,7 +64,7 @@ const ChangePasswordScreen = ({ navigation }) => {
       }
 
       // Backend isteği
-      await axios.put(`http://192.168.1.36:5000/api/users/changepassword/${userId}`, {
+      await axios.put(`http://192.168.0.248:5000/api/users/changepassword/${userId}`, {
         currentPassword,
         newPassword
       });
@@ -81,32 +85,29 @@ const ChangePasswordScreen = ({ navigation }) => {
       Alert.alert("Hata", serverMsg || "Şifre değiştirilemedi.");
     }
   };
+  const renderPasswordInput = (value, setValue, showPassword, setShowPassword, placeholder) => (
+    <View style={styles.passwordContainer}>
+      <TextInput
+        style={styles.inputPassword}
+        placeholder={placeholder}
+        value={value}
+        onChangeText={setValue}
+        secureTextEntry={!showPassword}
+      />
+      <TouchableOpacity onPress={() => setShowPassword(prev => !prev)} style={styles.eyeIcon}>
+        <Ionicons name={showPassword ? "eye" : "eye-off"} size={22} color="#777" />
+      </TouchableOpacity>
+    </View>
+  );
+
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Change Password</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Current Password"
-        secureTextEntry
-        value={currentPassword}
-        onChangeText={setCurrentPassword}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="New Password"
-        secureTextEntry
-        value={newPassword}
-        onChangeText={setNewPassword}
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Confirm New Password"
-        secureTextEntry
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-      />
+      {renderPasswordInput(currentPassword, setCurrentPassword, showCurrentPassword, setShowCurrentPassword, "Current Password")}
+      {renderPasswordInput(newPassword, setNewPassword, showNewPassword, setShowNewPassword, "New Password")}
+      {renderPasswordInput(confirmPassword, setConfirmPassword, showConfirmPassword, setShowConfirmPassword, "Confirm New Password")}
 
       <TouchableOpacity style={styles.button} onPress={handleChangePassword}>
         <Text style={styles.buttonText}>Save</Text>
@@ -158,5 +159,25 @@ const styles = StyleSheet.create({
 },
   cancel: { 
    backgroundColor: "#ccc" 
+},
+inputPassword: {
+  flex: 1,
+  padding: 12,
+  borderWidth: 1,
+  borderColor: "#ccc",
+  borderRadius: 8,
+  paddingRight: 40,
+  fontSize: 14,
+  marginBottom: 15,
+},
+passwordContainer: { 
+  flexDirection: "row",
+  alignItems: "center",
+  position: "relative",
+  marginBottom: 15,
+},
+eyeIcon: { 
+  position: "absolute",
+  right: 10,
 },
 });

@@ -36,7 +36,7 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await axios.get("http://192.168.1.36:5000/api/users");
+        const res = await axios.get("http://192.168.0.248:5000/api/users");
         setUsers(res.data);
       } catch (err) {
         console.error("Kullanıcılar alınamadı:", err.message);
@@ -69,28 +69,33 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
       }
 
       // Görev oluşturma veya güncelleme
-      if (task) {
-        const updated = await updateTask(task.id, {
-          title: title.trim(),
-          description: desc.trim(),
-          status,
-          assignee_id: assignee || null,
-          updated_by: Number(currentUser.id),
-        });
-        if (onTaskUpdate) onTaskUpdate(updated);
-      } else {
-        await createTask({
-          project_id: 1,
-          title: title.trim(),
-          description: desc.trim(),
-          status,
-          assignee_id: assignee || null,
-          created_by: Number(currentUser.id),
-        });
-      }
+     if (!task) {
+  const created = await createTask({
+    project_id: 1,
+    title: title.trim(),
+    description: desc.trim(),
+    status,
+    assignee_id: assignee || null,
+    created_by: Number(currentUser.id),
+  });
 
-      if (typeof refresh === "function") refresh();
-      onClose();
+  created.created_by_name = `${currentUser.name} ${currentUser.surname}`;
+  created.updated_by_name = `${currentUser.name} ${currentUser.surname}`; 
+  if (onTaskUpdate) onTaskUpdate(created); 
+} else {
+  const updated = await updateTask(task.id, {
+    title: title.trim(),
+    description: desc.trim(),
+    status,
+    assignee_id: assignee || null,
+    updated_by: Number(currentUser.id),
+  });
+
+  updated.updated_by_name = `${currentUser.name} ${currentUser.surname}`;
+  updated.created_by_name = task.created_by_name || "";
+  if (onTaskUpdate) onTaskUpdate(updated); 
+}
+   onClose();
 
     } catch (err) {
       const message = err.response?.data?.message || "Görev kaydedilemedi. Lütfen tekrar deneyin.";
@@ -104,7 +109,7 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
   return (
     <View style={styles.container}>
       <View style={styles.modalCard}>
-        {/* 🔹 Kapat butonu */}
+        {/* Kapat butonu */}
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
           <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>
@@ -128,7 +133,7 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
           onChangeText={setDesc}
         />
 
-        {/* 🔹 Status Picker */}
+        {/* Status Picker */}
         <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={status}
@@ -143,7 +148,7 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
           </Picker>
         </View>
 
-        {/* 🔹 Assignee Picker */}
+        {/* Assignee Picker */}
         <View style={styles.pickerWrapper}>
           {loadingUsers ? (
             <ActivityIndicator size="small" color="#6C4EFF" />
@@ -165,7 +170,7 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
           )}
         </View>
 
-        {/* 🔹 Kaydet butonu */}
+        {/* Kaydet butonu */}
         <TouchableOpacity
           style={[styles.saveButton, isSaveDisabled && styles.disabledButton]}
           onPress={handleSave}
@@ -179,7 +184,6 @@ const AddTaskModal = ({ onClose, refresh, task, onTaskUpdate }) => {
 };
 
 export default AddTaskModal;
-
 
 // Styles kodları 
 const styles = StyleSheet.create({

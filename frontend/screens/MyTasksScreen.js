@@ -49,7 +49,7 @@ const MyTasksScreen = ({ navigation }) => {
     setLoading(true);
 
     try {
-      const res = await axios.get(`http://192.168.1.36:5000/api/tasks/user/${id}`);
+      const res = await axios.get(`http://192.168.0.248:5000/api/tasks/user/${id}`);
       const allTasks = res.data || [];
 
       const startIndex = (nextPage - 1) * limit;

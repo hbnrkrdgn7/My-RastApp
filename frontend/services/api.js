@@ -1,10 +1,12 @@
 import axios from "axios";
 
-const API_URL = "http://192.168.1.36:5000/api";
+const API_URL = "http://192.168.0.248:5000/api";
 
 // Belirli proje altındaki görevleri getir
-export const getTasks = async (projectId) => {
-  const res = await axios.get(`${API_URL}/tasks/${projectId}`);
+export const getTasks = async (projectId, status = null, page = 1, limit = 10) => {
+  const params = { page, limit };
+  if (status) params.status = status; // status parametresi varsa ekle
+  const res = await axios.get(`${API_URL}/tasks/${projectId}`, { params });
   return res.data; // Görev listesini döndür
 };
 

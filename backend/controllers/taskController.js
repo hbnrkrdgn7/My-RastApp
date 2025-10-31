@@ -4,11 +4,19 @@ import prisma from "../db.js";
 export const getTasks = async (req, res) => {
   try {
     const { projectId } = req.params;
+    const status = req.query.status;
+    const page = parseInt(req.query.page) || 1;   
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    // Görevleri çek ve ilişkili kullanıcı bilgilerini al
+    const whereClause = { project_id: parseInt(projectId) };
+    if (status) whereClause.status = status;
+
     const tasks = await prisma.tasks.findMany({
-      where: { project_id: parseInt(projectId) },
+      where: whereClause,
       orderBy: { created_at: "desc" },
+      skip,
+      take: limit,
       include: {
         users_tasks_created_byTousers: { select: { name: true, surname: true } },
         users_tasks_updated_byTousers: { select: { name: true, surname: true } },
@@ -16,7 +24,6 @@ export const getTasks = async (req, res) => {
       },
     });
 
-        // Kullanıcı isimlerini kolay okunur şekilde ekle
     const formattedTasks = tasks.map((t) => ({
       ...t,
       created_by_name: t.users_tasks_created_byTousers
@@ -39,6 +46,7 @@ export const getTasks = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 // Yeni görev oluştur
 export const createTask = async (req, res) => {
@@ -130,6 +138,9 @@ export const updateTask = async (req, res) => {
         users_tasks_assignee_idTousers: {
           select: { name: true, surname: true, profile_picture: true },
         },
+         users_tasks_updated_byTousers: {   
+          select: { name: true, surname: true }
+    }
       },
     });
 
@@ -141,6 +152,9 @@ export const updateTask = async (req, res) => {
         : null,
       assigned_to_avatar: updatedTask.users_tasks_assignee_idTousers
         ? updatedTask.users_tasks_assignee_idTousers.profile_picture
+        : null,
+      updated_by_name: updatedTask.users_tasks_updated_byTousers
+        ? `${updatedTask.users_tasks_updated_byTousers.name} ${updatedTask.users_tasks_updated_byTousers.surname || ""}`
         : null,
     };
 
@@ -166,3 +180,39 @@ export const deleteTask = async (req, res) => {
   }
 };
 
+// Kullanıcıya ait görevleri getir
+export const getUserTasks = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const tasks = await prisma.tasks.findMany({
+      where: { assignee_id: parseInt(userId) },
+      orderBy: { created_at: "desc" },
+      include: {
+        users_tasks_created_byTousers: { select: { name: true, surname: true } },
+        users_tasks_updated_byTousers: { select: { name: true, surname: true } },
+        users_tasks_assignee_idTousers: { select: { name: true, surname: true, profile_picture: true } }
+      }
+    });
+
+    const formattedTasks = tasks.map((t) => ({
+      ...t,
+      created_by_name: t.users_tasks_created_byTousers
+        ? `${t.users_tasks_created_byTousers.name} ${t.users_tasks_created_byTousers.surname || ""}`
+        : null,
+      updated_by_name: t.users_tasks_updated_byTousers
+        ? `${t.users_tasks_updated_byTousers.name} ${t.users_tasks_updated_byTousers.surname || ""}`
+        : null,
+      assigned_to_name: t.users_tasks_assignee_idTousers
+        ? `${t.users_tasks_assignee_idTousers.name} ${t.users_tasks_assignee_idTousers.surname || ""}`
+        : null,
+      assigned_to_avatar: t.users_tasks_assignee_idTousers
+        ? t.users_tasks_assignee_idTousers.profile_picture
+        : null,
+    }));
+
+    res.json(formattedTasks);
+  } catch (err) {
+    console.error("Kullanıcı görevleri alınamadı:", err);
+    res.status(500).json({ error: err.message });
+  }
+};

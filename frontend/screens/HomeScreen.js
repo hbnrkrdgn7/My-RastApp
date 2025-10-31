@@ -1,46 +1,89 @@
 import React, { useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Modal, TextInput, ScrollView, Image, Alert, Linking
+  Modal, TextInput, ScrollView, Image, Linking
 } from "react-native";
 import { getTasks } from "../services/api";
 import AddTaskModal from "./AddTaskModal";
 import TaskDetail from "./TaskDetail";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import SettingsModal from "./SettingsModal";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const HomeScreen = ({ navigation }) => {
-  // State'ler
-  const [tasks, setTasks] = useState([]);
+  const statuses = ["Backlog", "Todo", "In Progress", "Done"];
+  const projectId = 1;
+
+  // Durumlara göre state'ler
+  const [tasksByStatus, setTasksByStatus] = useState({
+    Backlog: [], Todo: [], "In Progress": [], Done: []
+  });
+  const [pageByStatus, setPageByStatus] = useState({
+    Backlog: 1, Todo: 1, "In Progress": 1, Done: 1
+  });
+  const [loadingByStatus, setLoadingByStatus] = useState({
+    Backlog: false, Todo: false, "In Progress": false, Done: false
+  });
   const [showModal, setShowModal] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [searchText, setSearchText] = useState("");
   const [selectedTask, setSelectedTask] = useState(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  
-  const projectId = 1; // Örnek proje ID
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchText, setSearchText] = useState("");
+  const [userName, setUserName] = useState("");
+  const [userAvatar, setUserAvatar] = useState("");
 
-  // Görevleri fetch et
-  const fetchTasks = async () => {
+  // Görevleri fetch et (statü ve sayfa bazlı)
+  const fetchTasksByStatus = async (status, nextPage = 1) => {
+    if (loadingByStatus[status]) return;
+
+    setLoadingByStatus(prev => ({ ...prev, [status]: true }));
+
     try {
-      const res = await getTasks(projectId);
-      setTasks(res.sort((a, b) => new Date(b.created_at) - new Date(a.created_at)));
-    } catch (err) { console.error(err); }
+      const res = await getTasks(projectId, status, nextPage, 10); 
+      if (res.length === 0) return; 
+
+      setTasksByStatus(prev => {
+        const existingIds = new Set(prev[status].map(t => t.id));
+        const newTasks = res.filter(t => !existingIds.has(t.id));
+        return {
+          ...prev,
+          [status]: nextPage === 1 ? res : [...prev[status], ...newTasks],
+        };
+      });
+
+      setPageByStatus(prev => ({ ...prev, [status]: nextPage }));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingByStatus(prev => ({ ...prev, [status]: false }));
+    }
   };
 
   // Yeni veya güncellenmiş task ekleme
-  const handleTaskUpdate = (newOrUpdatedTask) => {
-    setTasks(prev => [newOrUpdatedTask, ...prev.filter(t => t.id !== newOrUpdatedTask.id)]);
-  };
+ const handleTaskUpdate = (newOrUpdatedTask) => {
+  const taskStatus = newOrUpdatedTask.status;
+  if (!statuses.includes(taskStatus)) return;
+
+  setTasksByStatus(prev => {
+    const newState = {};
+    statuses.forEach(s => {
+      // Önce eski task’ı tüm statülerden çıkar
+      newState[s] = prev[s].filter(t => t.id !== newOrUpdatedTask.id);
+    });
+    // Yeni veya güncellenmiş task’ı doğru statüye ekle
+newState[taskStatus] = [newOrUpdatedTask, ...newState[taskStatus]];
+    return newState;
+  });
+};
 
   // Status bazlı filtreleme ve arama
-  const groupedTasks = (status) => {
+  const filteredTasks = (status) => {
     return searchText
-      ? tasks.filter(t => t.status === status && t.title.toLowerCase().includes(searchText.toLowerCase()))
-      : tasks.filter(t => t.status === status);
+      ? tasksByStatus[status].filter(t => t.title.toLowerCase().includes(searchText.toLowerCase()))
+      : tasksByStatus[status];
   };
 
-  // Task render fonksiyonu
+  // Task render
   const renderTask = ({ item }) => {
     const statusStyle = item.status === "Done" ? styles.statusDone :
                         item.status === "In Progress" ? styles.statusProgress :
@@ -51,25 +94,16 @@ const HomeScreen = ({ navigation }) => {
       <TouchableOpacity style={styles.taskCard} onPress={() => setSelectedTask(item)}>
         <Text style={styles.taskTitle}>{item.title}</Text>
         <Text style={styles.taskDescription} numberOfLines={3}>{item.description || "No description available."}</Text>
-
-        {/* Task Footer */}
         <View style={styles.taskFooter}>
-          {/* Assignee */}
           <View style={styles.assigneeTag}>
             {item.assigned_to_avatar ? 
               <Image source={{ uri: item.assigned_to_avatar }} style={styles.assigneeAvatar} /> 
               : <View style={styles.assigneeIcon}><Text style={styles.assigneeIconText}>👤</Text></View>}
             <Text style={styles.assigneeText} numberOfLines={1}>{item.assigned_to_name || "Unassigned"}</Text>
           </View>
-
-          {/* Date ve Status */}
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <Text style={styles.taskDate}>
-              📅 {new Date(item.created_at).toLocaleDateString("tr-TR", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              })}
+              📅 {new Date(item.created_at).toLocaleDateString("tr-TR")}
             </Text>
             <Text style={[styles.statusBadge, statusStyle]}>{item.status}</Text>
           </View>
@@ -79,10 +113,9 @@ const HomeScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
-    fetchTasks();
+    statuses.forEach(status => fetchTasksByStatus(status, 1));
 
     const unsubscribe = navigation.addListener('focus', () => {
-      // AsyncStorage’dan kullanıcı bilgilerini yükle
       const loadUser = async () => {
         const user = JSON.parse(await AsyncStorage.getItem("user"));
         if (user) {
@@ -91,49 +124,29 @@ const HomeScreen = ({ navigation }) => {
         }
       };
       loadUser();
-
-      // Profil güncellemesi geldi mi?
-      const updatedUser = navigation.getState()?.routes?.find(r => r.name === "Home")?.params?.updatedUser;
-      if (updatedUser) {
-        setUserName(updatedUser.name);
-        setUserAvatar(updatedUser.avatar);
-      }
-
-      // Task güncellemeleri varsa fetch et
-      if (navigation.getState()?.routes?.some(r => r.params?.updatedTaskId)) {
-        fetchTasks();
-      }
     });
 
     return unsubscribe;
   }, [navigation]);
 
-  // Logo tıklanınca açılacak link
   const handleLogoPress = () => { Linking.openURL("https://www.rastmobile.com/tr"); };
 
   return (
     <View style={styles.container}>
-      {/* 🔹 Üst Bar */}
+      {/* Üst Bar */}
       <View style={styles.headerContainer}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={handleLogoPress}>
-            <Image
-              source={require("../assets/rast-mobile-logo1.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        </View>
-
+        <TouchableOpacity onPress={handleLogoPress}>
+          <Image source={require("../assets/rast-mobile-logo1.png")} style={styles.logo} resizeMode="contain"/>
+        </TouchableOpacity>
         {showSearch ? (
           <TextInput
             style={styles.searchInput}
             placeholder="Search..."
             value={searchText}
             onChangeText={setSearchText}
-            onSubmitEditing={() => setShowSearch(false)}
             autoFocus
             placeholderTextColor="#ccc"
+            onSubmitEditing={() => setShowSearch(false)} 
           />
         ) : (
           <View style={styles.headerIcons}>
@@ -147,80 +160,64 @@ const HomeScreen = ({ navigation }) => {
         )}
       </View>
 
-      {/* 🔹 Proje Başlığı Bölümü */}
-      <View style={styles.projectHeader}>
-        <View style={styles.projectHeaderLeft}>
-          <View style={styles.projectIcon}>
-            <Ionicons name="code-slash" size={20} color="#7B2FF7" />
-          </View>
-          <View>
-            <Text style={styles.projectMainTitle}>Refactoring for Word Ninja</Text>
-            <Text style={styles.projectSubTitle}>New project for refactoring our app Word Ninja</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Task listeleri */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 150 }}
-      >
-        {["Backlog", "To Do", "In Progress", "Done"].map(status => (
+      <ScrollView contentContainerStyle={{ paddingBottom: 150 }} showsVerticalScrollIndicator={false}>
+        {statuses.map(status => (
           <View key={status}>
             <View style={styles.sectionRow}>
               <Text style={styles.section}>{status}</Text>
-              <Text style={styles.sectionCount}>{groupedTasks(status).length}</Text>
+              <Text style={styles.sectionCount}>{filteredTasks(status).length}</Text>
             </View>
             <FlatList
-              data={groupedTasks(status)}
+              data={filteredTasks(status) || []}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.flatListContent}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={(item) => item.id.toString() + item.status}
               renderItem={renderTask}
+              onEndReached={() => fetchTasksByStatus(status, pageByStatus[status] + 1)}
+              onEndReachedThreshold={0.5}
             />
           </View>
         ))}
       </ScrollView>
+      <View style={styles.bottomBar}>
+  <TouchableOpacity onPress={() => {
+  navigation.reset({
+    index: 0,
+    routes: [{ name: "Home" }],
+  });
+}}>
+  <Ionicons name="home-outline" size={26} color="#7b2ff7" />
+</TouchableOpacity>
+  <TouchableOpacity onPress={() => Linking.openURL("https://wordninja.ai")} style={styles.bottomLink}>
+    <Text style={styles.bottomLinkText}>Go to Word Ninja</Text>
+  </TouchableOpacity>
+</View>
 
-      {/* 🔹 Görev ekleme butonu */}
       <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
         <Ionicons name="add" size={36} color="#fff" />
       </TouchableOpacity>
 
-      {/* 🔹 Modallar */}
+      {/* Modallar */}
       <Modal visible={showModal} animationType="slide" transparent onRequestClose={() => setShowModal(false)}>
-        <AddTaskModal onClose={() => setShowModal(false)} refresh={fetchTasks} onTaskAdded={handleTaskUpdate} />
+<AddTaskModal
+  onClose={() => setShowModal(false)}
+  refresh={fetchTasksByStatus}
+  onTaskUpdate={handleTaskUpdate}
+/>
       </Modal>
 
       <Modal visible={!!selectedTask} animationType="slide" transparent onRequestClose={() => setSelectedTask(null)}>
-        <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} refresh={fetchTasks} />
+        <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} refresh={fetchTasksByStatus}  onTaskUpdate={handleTaskUpdate} />
       </Modal>
 
-      {/* 🔹 Ayarlar Modalı */}
       <SettingsModal
         visible={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
-        onShowUserInfo={() => {
-          setShowSettingsModal(false);
-          navigation.navigate("UserInfo");
-        }}
-        onShowChangePassword={() => {
-          setShowSettingsModal(false);
-          navigation.navigate("ChangePassword");
-        }}
+        onShowUserInfo={() => { setShowSettingsModal(false); navigation.navigate("UserInfo"); }}
+        onShowChangePassword={() => { setShowSettingsModal(false); navigation.navigate("ChangePassword"); }}
         navigation={navigation}
       />
-
-      {/* 🔹 Alt Bar */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity onPress={() => navigation.navigate("Home")}>
-          <Ionicons name="home-outline" size={26} color="#7b2ff7" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => Linking.openURL("https://wordninja.ai")} style={styles.bottomLink}>
-          <Text style={styles.bottomLinkText}>Go to Word Ninja</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };

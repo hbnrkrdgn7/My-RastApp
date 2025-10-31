@@ -16,7 +16,8 @@ const LoginScreen = ({ navigation }) => {
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState(null);
-
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRegPassword, setShowRegPassword] = useState(false);
   // Profil avatar seçenekleri
   const avatarOptions = [
     "https://cdn-icons-png.flaticon.com/512/219/219983.png",
@@ -82,23 +83,38 @@ const LoginScreen = ({ navigation }) => {
 
   // Kayıt işlemi
   const handleRegister = async () => {
+    // Boş alan kontrolü
     if (!regName || !regLastName || !regEmail || !regPassword) {
       Alert.alert("Uyarı", "Tüm alanları doldurmanız gerekiyor!");
       return;
     }
+
+    // E-posta formatı kontrolü
     if (!isValidEmail(regEmail)) {
       Alert.alert("Uyarı", "Geçerli bir e-posta girin!");
       return;
     }
+
+    // Şifre minimum uzunluk
     if (regPassword.length < 6) {
       Alert.alert("Uyarı", "Şifre en az 6 karakter olmalıdır!");
       return;
     }
+
+    // Şifre güçlü mü kontrol et 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+    if (!passwordRegex.test(regPassword)) {
+       Alert.alert( "Uyarı", "Şifre en az 1 büyük harf, 1 küçük harf ve 1 rakam içermelidir." );
+      return;
+    }
+
+    // Profil fotoğrafı seçildi mi
     if (!selectedAvatar) {
       Alert.alert("Uyarı", "Lütfen bir profil fotoğrafı seçin!");
       return;
     }
 
+    // Backend isteği
     try {
       const res = await registerUser({
         name: regName,
@@ -113,11 +129,15 @@ const LoginScreen = ({ navigation }) => {
         resetRegisterForm();
       }
     } catch (err) {
-      console.log("Kayıt hatası detay:", err.response);
-      const message = err.response?.data?.error || "Kayıt işlemi başarısız oldu!";
-      Alert.alert("Uyarı", message);
-    }
-  };
+      console.log("Kayıt hatası detay:", err);
+        const serverMsg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+      "Kayıt işlemi başarısız oldu!";
+    Alert.alert("Hata", serverMsg);
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -135,13 +155,18 @@ const LoginScreen = ({ navigation }) => {
         keyboardType="email-address"
         autoCapitalize="none"
       />
+    <View style={styles.passwordContainer}>
       <TextInput
-        style={styles.input}
+        style={styles.inputPassword}
         placeholder="Password"
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
+        secureTextEntry={!showPassword}
       />
+      <TouchableOpacity onPress={() => setShowPassword(prev => !prev)} style={styles.eyeIcon}>
+      <Ionicons name={showPassword ? "eye" : "eye-off"} size={22} color="#777" />
+      </TouchableOpacity>
+    </View>
 
       <TouchableOpacity style={styles.loginBtn} onPress={handleLogin}>
         <Text style={styles.loginText}>Login</Text>
@@ -154,7 +179,7 @@ const LoginScreen = ({ navigation }) => {
         </Text>
       </Text>
 
-      {/* 🔹 Kayıt Modalı */}
+      {/* Kayıt Modalı */}
       <Modal animationType="slide" transparent={true} visible={registerVisible} onRequestClose={() => setRegisterVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -172,13 +197,18 @@ const LoginScreen = ({ navigation }) => {
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-              <TextInput
-                style={styles.input}
-                placeholder="Password (At least 6 characters)"
-                value={regPassword}
-                onChangeText={setRegPassword}
-                secureTextEntry
-              />
+        <View style={styles.passwordContainer}>
+          <TextInput
+            style={styles.inputPassword}
+            placeholder="Password (At least 6 characters)"
+            value={regPassword}
+            onChangeText={setRegPassword}
+            secureTextEntry={!showRegPassword}
+          />
+          <TouchableOpacity onPress={() => setShowRegPassword(prev => !prev)} style={styles.eyeIcon}>
+            <Ionicons name={showRegPassword ? "eye" : "eye-off"} size={22} color="#777" />
+          </TouchableOpacity>
+        </View>
 
               {/* Profil Fotoğrafı Seçimi */}
               <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
@@ -197,6 +227,7 @@ const LoginScreen = ({ navigation }) => {
                   </TouchableOpacity>
                 ))}
               </View>
+              
 
               {/* Kayıt ve iptal butonları */}
               <TouchableOpacity style={styles.registerBtn} onPress={handleRegister}>
@@ -215,8 +246,6 @@ const LoginScreen = ({ navigation }) => {
 };
 
 export default LoginScreen;
-
-
 
 // Styles kodları
 const styles = StyleSheet.create({
@@ -361,4 +390,24 @@ const styles = StyleSheet.create({
     fontWeight: "700", 
     fontSize: 16 
   },
+  passwordContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+  position: "relative",
+  marginBottom: 15,
+},
+inputPassword: {
+  flex: 1,
+  padding: 12,
+  borderWidth: 1,
+  borderColor: "#ccc",
+  borderRadius: 8,
+  paddingRight: 40, 
+  fontSize: 14,
+},
+eyeIcon: {
+  position: "absolute",
+  right: 10,
+},
+
 });

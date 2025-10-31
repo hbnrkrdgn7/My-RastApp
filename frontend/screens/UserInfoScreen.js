@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView,
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
-const API_URL = "http://192.168.1.36:5000/api"; // Backend URL
+const API_URL = "http://192.168.0.248:5000/api"; // Backend URL
 
 const avatarOptions = [
   "https://cdn-icons-png.flaticon.com/512/219/219983.png",
