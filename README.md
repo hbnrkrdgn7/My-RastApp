@@ -18,6 +18,7 @@ Modern ve kullanıcı dostu bir görev yönetim sistemi. React Native frontend v
 - ✅ Görev atama (assignee)
 - ✅ Görev detayları görüntüleme
 - ✅ Tarih ve durum takibi
+- ✅ **Infinite Scroll**: Görev listelerinde kullanıcı sayfayı kaydırdıkça yeni görevler otomatik yüklenir
 
 ### UI/UX Özellikleri
 - ✅ Modern ve responsive tasarım
